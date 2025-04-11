@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "pax-pal-2025"
+version = "0.1.0"
+description = "The backend of the PAX Pal 2025 webapp"
+authors = ["Trevor Hubbard <trevormhubbard@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pandas = "^2.2.3"
+beautifulsoup4 = "^4.13.3"
+playwright = "^1.51.0"
+tenacity = "^9.1.2"
+
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.1.1"
+ipywidgets = "^8.1.6"
+nbformat = "^5.10.4"
+pickleshare = "^0.7.5"
+tqdm = "^4.67.1"
+python-dotenv = "^1.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
