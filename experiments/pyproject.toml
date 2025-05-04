@@ -11,6 +11,8 @@ pandas = "^2.2.3"
 beautifulsoup4 = "^4.13.3"
 playwright = "^1.51.0"
 tenacity = "^9.1.2"
+openai = "^1.77.0"
+python-levenshtein = "^0.27.1"
 
 
 [tool.poetry.group.dev.dependencies]
