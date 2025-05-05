@@ -175,3 +175,4 @@ cython_debug/
 experiments/data/*
 backend/database.sqlite
 .cursor/*
+.DS_Store
