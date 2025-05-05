@@ -19,3 +19,21 @@ services:
     # but specifying it here ensures it overrides any base image CMD if needed.
     # It also makes the development setup explicit.
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder
+    ports:
+      - "5173:5173" # Default Vite dev port
+    volumes:
+      # Mount the entire frontend directory for hot-reloading
+      - ./frontend:/app
+      # Avoid mounting node_modules from the host, let the container manage it
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+    # Run the development server, ensuring it's accessible externally
+    # The specific script name ('dev') comes from standard Vite setups in package.json
+    command: npm run dev -- --host 0.0.0.0
