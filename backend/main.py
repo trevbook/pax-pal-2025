@@ -12,7 +12,9 @@ import json
 import sqlite3
 
 # Third-party imports
+from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 
 # Local imports (relative)
 from models import Game, MediaItem, Link
@@ -29,6 +31,27 @@ app = FastAPI(
     # You can add more metadata here, like contact info or license
 )
 
+# --- CORS Configuration ---
+# Adjust origins as needed for development and production
+origins = [
+    "http://localhost",        # Allow requests from any port on localhost
+    "http://localhost:5173",   # Explicitly allow Vite dev server default port
+    "http://127.0.0.1",      # Allow requests from 127.0.0.1
+    "http://127.0.0.1:5173", # Explicitly allow Vite dev server default port via IP
+    # Add your production frontend URL here when you deploy
+    # e.g., "https://your-app-name.run.app"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # List of origins allowed
+    allow_credentials=True, # Allow cookies/auth headers
+    allow_methods=["*"],    # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"],    # Allow all headers
+)
+
+# --- Database Setup ---
+DATABASE_URL = "./paxpal.db"
 
 # ==========
 # API ROUTES
