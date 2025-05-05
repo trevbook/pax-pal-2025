@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: ./backend # Path to the directory containing the Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000" # Map host port 8000 to container port 8000
+    volumes:
+      # Mount the backend code directory for hot-reloading
+      - ./backend:/app
+      # Ensure the database file is available inside the container
+      # This overrides the DB file potentially copied during build
+      - ./backend/database.sqlite:/app/database.sqlite
+    environment:
+      # Optional: Define environment variables if needed by the app
+      # EXAMPLE_VAR: example_value
+      PYTHONUNBUFFERED: 1 # Already set in Dockerfile, but good practice here too
+    # The command in the Dockerfile is already set to run with --reload,
+    # but specifying it here ensures it overrides any base image CMD if needed.
+    # It also makes the development setup explicit.
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
