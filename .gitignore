@@ -174,5 +174,4 @@ cython_debug/
 .pypirc
 experiments/data/*
 backend/database.sqlite
-.cursor/*
 .DS_Store
