@@ -80,6 +80,15 @@ jobs:
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
           token_format: "access_token"
 
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Download database from GCS
+        run: |-
+          gsutil cp gs://pax-pal-2025-webapp/database.sqlite ./backend/database.sqlite
+        env:
+          CLOUDSDK_CORE_PROJECT: ${{ env.GCP_PROJECT_ID }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
