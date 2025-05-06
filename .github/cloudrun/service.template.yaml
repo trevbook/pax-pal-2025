@@ -1,0 +1,68 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ${GAR_REPOSITORY_ID_FOR_SUBST} # e.g., pax-pal-2025-webapp
+  labels:
+    cloud.googleapis.com/location: ${GAR_LOCATION_FOR_SUBST} # e.g., us-central1
+  annotations:
+    run.googleapis.com/ingress: all # Allow unauthenticated
+    run.googleapis.com/launch-stage: BETA # Or GA, depending on your service stability
+spec:
+  template:
+    metadata:
+      annotations:
+        # Consider adding revision-specific annotations if needed
+        # e.g., autoscaling.knative.dev/minScale: '0' (Cloud Run default is 0 for gen2)
+    spec:
+      containerConcurrency: 80 # Default, adjust if performance testing suggests otherwise
+      timeoutSeconds: 300 # Default (5 minutes), adjust if specific routes need more time
+      containers:
+        - name: frontend
+          image: ${FRONTEND_IMAGE_URL_FOR_SUBST}
+          ports:
+            - name: http1 # Knative requires port names: http1, h2c, or grpc
+              containerPort: 80 # Nginx port
+          resources: # Optional: Define resource requests and limits
+            limits:
+              cpu: "1000m" # 1 vCPU
+              memory: "512Mi"
+            # requests: # By default, requests are set to limits on 1st Gen.
+            #   cpu: "250m"
+            #   memory: "256Mi"
+
+        - name: backend
+          image: ${BACKEND_IMAGE_URL_FOR_SUBST}
+          ports:
+            - name: http1
+              containerPort: 8000 # FastAPI/Uvicorn port (matches Nginx upstream)
+          startupProbe:
+            initialDelaySeconds: 15 # Increased slightly to ensure DB download and app init
+            timeoutSeconds: 5     # How long to wait for probe response
+            periodSeconds: 5      # How often to probe during startup
+            failureThreshold: 12  # Retries before failing startup (12*5s = 60s additional time)
+            httpGet:
+              path: /health     # Your health check endpoint
+              port: 8000        # Port for the health check
+          livenessProbe: # Ensures the container is restarted if it becomes unresponsive later
+            # initialDelaySeconds: 0 # Liveness typically starts after startup probe succeeds
+            timeoutSeconds: 5
+            periodSeconds: 10     # Check less frequently than startup
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 8000
+          resources:
+            limits:
+              cpu: "1000m" # 1 vCPU
+              memory: "512Mi" # Adjust based on your application's needs
+            # requests:
+            #   cpu: "500m"
+            #   memory: "256Mi"
+          # env: # Example for setting environment variables for the backend
+          #   - name: PYTHONUNBUFFERED
+          #     value: "1" # Often useful for Python logs in containers
+          #   - name: MY_API_KEY
+          #     valueFrom:
+          #       secretKeyRef:
+          #         name: my-backend-secrets # Name of the Secret Manager secret
+          #         key: version-or-alias # Specific version or alias (e.g., 'latest' or '1') 

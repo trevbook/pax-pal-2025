@@ -183,17 +183,26 @@ jobs:
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
           token_format: "access_token"
 
+      - name: Generate Service YAML from template
+        run: |
+          echo "Generating Cloud Run service YAML from template..."
+          mkdir -p .github/cloudrun # Ensure directory exists
+
+          # Prepare environment variables for substitution
+          export FRONTEND_IMAGE_URL_FOR_SUBST="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}"
+          export BACKEND_IMAGE_URL_FOR_SUBST="${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}"
+          export GAR_REPOSITORY_ID_FOR_SUBST="${{ env.GAR_REPOSITORY_ID }}"
+          export GCP_PROJECT_ID_FOR_SUBST="${{ env.GCP_PROJECT_ID }}"
+          export GAR_LOCATION_FOR_SUBST="${{ env.GAR_LOCATION }}"
+
+          envsubst < .github/cloudrun/service.template.yaml > .github/cloudrun/service.deploy.yaml
+
+          echo "Generated .github/cloudrun/service.deploy.yaml:"
+          cat .github/cloudrun/service.deploy.yaml
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: ${{ env.GAR_REPOSITORY_ID }} # Service name, e.g., pax-pal-2025-webapp
-          project_id: ${{ env.GCP_PROJECT_ID }}
-          region: ${{ env.GAR_LOCATION }} # e.g., us-central1
-          flags: >-
-            --allow-unauthenticated
-            --container=frontend
-            --image=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}
-            --port=80
-            --container=backend
-            --image=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}
+          project_id: ${{ env.GCP_PROJECT_ID }} # Project ID is still needed for the action context
+          metadata: .github/cloudrun/service.deploy.yaml

@@ -59,6 +59,21 @@ DATABASE_URL = "./paxpal.db"
 
 
 @app.get(
+    "/health",
+    tags=["Health"],
+    summary="Application Health Check",
+    description="Returns a 200 OK if the application is healthy and ready to serve requests.",
+    status_code=status.HTTP_200_OK, # Explicitly set the success status code
+)
+async def health_check():
+    """
+    Simple health check endpoint.
+    If this endpoint is reachable and returns 200, the service is considered healthy.
+    """
+    return {"status": "healthy"}
+
+
+@app.get(
     "/",
     tags=["Root"],
     summary="API Root / Health Check",
