@@ -32,17 +32,14 @@ spec:
 
         - name: backend
           image: ${BACKEND_IMAGE_URL_FOR_SUBST}
-          ports:
-            - name: '' # Knative requires port names: http1, h2c, or empty
-              containerPort: 8000 # FastAPI/Uvicorn port (matches Nginx upstream)
           startupProbe:
             initialDelaySeconds: 15 # Increased slightly to ensure DB download and app init
-            timeoutSeconds: 5     # How long to wait for probe response
-            periodSeconds: 5      # How often to probe during startup
-            failureThreshold: 12  # Retries before failing startup (12*5s = 60s additional time)
+            timeoutSeconds: 5 # How long to wait for probe response
+            periodSeconds: 5 # How often to probe during startup
+            failureThreshold: 12 # Retries before failing startup (12*5s = 60s additional time)
             httpGet:
-              path: /health     # Your health check endpoint
-              port: 8000        # Port for the health check
+              path: /health # Your health check endpoint
+              port: 8000 # Port for the health check
           # livenessProbe: # Ensures the container is restarted if it becomes unresponsive later
           #   # initialDelaySeconds: 0 # Liveness typically starts after startup probe succeeds
           #   timeoutSeconds: 5
@@ -65,4 +62,4 @@ spec:
           #     valueFrom:
           #       secretKeyRef:
           #         name: my-backend-secrets # Name of the Secret Manager secret
-          #         key: version-or-alias # Specific version or alias (e.g., 'latest' or '1') 
+          #         key: version-or-alias # Specific version or alias (e.g., 'latest' or '1')
