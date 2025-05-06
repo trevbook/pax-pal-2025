@@ -187,4 +187,3 @@ jobs:
             --port=80
             --container=backend
             --image=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}
-            --port=8000
