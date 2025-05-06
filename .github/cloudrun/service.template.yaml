@@ -33,7 +33,7 @@ spec:
         - name: backend
           image: ${BACKEND_IMAGE_URL_FOR_SUBST}
           ports:
-            - name: backend-http
+            - name: '' # Knative requires port names: http1, h2c, or empty
               containerPort: 8000 # FastAPI/Uvicorn port (matches Nginx upstream)
           startupProbe:
             initialDelaySeconds: 15 # Increased slightly to ensure DB download and app init
