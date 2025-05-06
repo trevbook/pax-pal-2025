@@ -182,6 +182,7 @@ jobs:
           project_id: ${{ env.GCP_PROJECT_ID }}
           region: ${{ env.GAR_LOCATION }} # e.g., us-central1
           flags: >-
+            --allow-unauthenticated
             --container=frontend
             --image=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}
             --port=80
