@@ -29,6 +29,7 @@ env:
 # - 'changes': Detects which parts of the codebase have changed.
 # - 'build-and-push-backend': Builds & pushes the backend Docker image if needed.
 # - 'build-and-push-frontend': Builds & pushes the frontend Docker image if needed.
+# - 'deploy-to-cloud-run': Deploys the frontend and backend images to Google Cloud Run as a multi-container service.
 # -----------------------------------------------------------------------------
 jobs:
   # ---------------------------------------------------------------------------
@@ -148,3 +149,50 @@ jobs:
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # Job: deploy-to-cloud-run
+  # Deploys the frontend and backend images to Google Cloud Run as a
+  # multi-container service.
+  # Runs if there were changes to backend or frontend and images were pushed.
+  # ---------------------------------------------------------------------------
+  deploy-to-cloud-run:
+    name: Deploy to Cloud Run
+    needs: [changes, build-and-push-backend, build-and-push-frontend] # Ensures build jobs are considered
+    if: (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true') && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write" # Required for Workload Identity Federation
+
+    steps:
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          token_format: "access_token"
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.GAR_REPOSITORY_ID }} # Service name, e.g., pax-pal-2025-webapp
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          region: ${{ env.GAR_LOCATION }} # e.g., us-central1
+          # Primary container (frontend)
+          image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}
+          flags: |
+            --container=backend
+            --image=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY_ID }}/${{ env.BACKEND_IMAGE_NAME }}:${{ env.LATEST_TAG }}
+            --port=8000
+            --port=80
+            --allow-unauthenticated
+            --platform=managed
+            # You can add other flags here, e.g.,
+            # --cpu=1
+            # --memory=512Mi
+            # --min-instances=0
+            # --max-instances=3
+            # --service-account=your-cloud-run-runtime-sa@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com
