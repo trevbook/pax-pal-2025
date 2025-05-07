@@ -216,9 +216,9 @@ function GameDetailsPage() {
                 />
               </Center>
             )}
-          <Group wrap="nowrap" align="center" gap="sm">
-            <Group gap={0}>
-              <Title order={1} style={{ flexGrow: 1 }}>
+          <Group wrap="nowrap" align="center" justify="space-between">
+            <Stack gap={0} style={{ flexGrow: 1 }}>
+              <Title order={1}>
                 {game.name}
               </Title>
               {game.snappy_summary && (
@@ -226,7 +226,7 @@ function GameDetailsPage() {
                   {game.snappy_summary}
                 </Text>
               )}
-            </Group>
+            </Stack>
             {game && game.id && (
               <GameActions
                 game={game}
