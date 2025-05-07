@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router";
-import "./App.css";
 // Import styles of packages that you've installed.
 import "@mantine/core/styles.css";
 

@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
-import { Title, Text, Loader, Alert } from "@mantine/core";
+import {
+  Title,
+  Text,
+  Loader,
+  Alert,
+  Center,
+  Container,
+  Image,
+  Group,
+  Pill,
+  Stack,
+  Divider,
+  List,
+} from "@mantine/core";
 import { fetchGameDetails } from "../api";
 
 function GameDetailsPage() {
@@ -24,6 +37,7 @@ function GameDetailsPage() {
       setGame(null);
       try {
         const data = await fetchGameDetails(id);
+        console.log("Game data:", data);
         setGame(data);
       } catch (err) {
         console.error("Failed to fetch game details:", err);
@@ -37,42 +51,127 @@ function GameDetailsPage() {
   }, [id]);
 
   return (
-    <>
-      <Title order={1} mb="md">
-        Game Details
-      </Title>
-
-      {!id && (
-        <Text c="dimmed" fs="italic" size="lg">
-          Please select a game or provide an ID in the URL (e.g.,
-          ?id=game-slug).
-        </Text>
+    <Container>
+      {loading && (
+        <Center mt="xl">
+          <Loader />
+        </Center>
       )}
-
-      {loading && <Loader />}
-
       {error && (
-        <Alert title="Error!" color="red">
+        <Alert color="red" mt="xl">
           {error}
         </Alert>
       )}
-
-      {game && (
-        <div>
-          <Title order={2}>{game.name}</Title>
-          <Text c="dimmed" size="sm" mb="xs">
-            ID: {game.id}
-          </Text>
+      {!loading && !error && game && (
+        <>
+          {game.header_image_url &&
+            typeof game.header_image_url === "string" &&
+            game.header_image_url.trim() !== "" && (
+              <Center mb="md">
+                <Image
+                  src={game.header_image_url}
+                  alt={game.name ? `${game.name} header` : "Game header"}
+                  radius="md"
+                  h={200}
+                  fit="contain"
+                />
+              </Center>
+            )}
+          <Title order={1} mb={2}>
+            {game.name}
+          </Title>
           {game.snappy_summary && (
-            <Text fw={500} mb="sm">
+            <Text size="md" c="dimmed" fs="italic" mt={4} mb="md">
               {game.snappy_summary}
             </Text>
           )}
-          <Text mb="md">{game.description}</Text>
-          <pre>{JSON.stringify(game, null, 2)}</pre>
-        </div>
+
+          <Divider my="md" />
+
+          {/* Description Section */}
+          {game.description && typeof game.description === "string" && game.description.trim() !== "" && (
+            <Stack gap={4} style={{ minWidth: 0 }} mb="md">
+              <Text fw={600} mb={2}>
+                Description
+              </Text>
+              <Text size="sm" style={{ whiteSpace: "pre-line" }}>
+                {game.description}
+              </Text>
+            </Stack>
+          )}
+
+          <Stack gap="lg">
+            <Stack gap={4} style={{ minWidth: 0 }}>
+              <Text fw={600} mb={2}>
+                Genres
+              </Text>
+              <Group gap={6} wrap="wrap">
+                {Array.isArray(game.genres_and_tags) &&
+                game.genres_and_tags.length > 0 ? (
+                  game.genres_and_tags.map((genre) => (
+                    <Pill key={genre} size="sm" variant="light">
+                      {genre}
+                    </Pill>
+                  ))
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    No information found
+                  </Text>
+                )}
+              </Group>
+            </Stack>
+            <Stack gap={4} style={{ minWidth: 0 }}>
+              <Text fw={600} mb={2}>
+                Platforms
+              </Text>
+              <Group gap={6} wrap="wrap">
+                {Array.isArray(game.platforms) && game.platforms.length > 0 ? (
+                  game.platforms.map((platform) => (
+                    <Pill key={platform} size="sm" variant="light">
+                      {platform}
+                    </Pill>
+                  ))
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    No information found
+                  </Text>
+                )}
+              </Group>
+            </Stack>
+            {/* Links Section */}
+            {Array.isArray(game.links) && game.links.length > 0 && (
+              <Stack gap={4} style={{ minWidth: 0 }}>
+                <Text fw={600} mb={2}>
+                  Links
+                </Text>
+                <List spacing="xs" size="sm" withPadding>
+                  {game.links.map((link, idx) => (
+                    <List.Item key={link.url || idx}>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          textDecoration: "underline",
+                          color: "inherit",
+                        }}
+                      >
+                        {link.title || link.url}
+                      </a>
+                    </List.Item>
+                  ))}
+                </List>
+              </Stack>
+            )}
+          </Stack>
+        </>
       )}
-    </>
+      {!loading && !error && !game && (
+        <Center mt="xl">
+          <Text>No game selected.</Text>
+        </Center>
+      )}
+    </Container>
   );
 }
 
