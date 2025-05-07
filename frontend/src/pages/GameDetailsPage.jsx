@@ -18,8 +18,9 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { fetchGameDetails } from "../api";
+import { fetchGameDetails, fetchGamesByIds } from "../api";
 import GameActions from "../components/GameActions";
+import SearchResultCard from "../components/SearchResultCard";
 import {
   getFavoriteGameIds,
   getPlayedGameIds,
@@ -31,12 +32,18 @@ function GameDetailsPage() {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [similarGames, setSimilarGames] = useState([]);
+  const [similarGamesLoading, setSimilarGamesLoading] = useState(false);
+  const [similarGamesError, setSimilarGamesError] = useState(null);
 
   useEffect(() => {
     if (!id) {
       setGame(null);
       setLoading(false);
       setError(null);
+      setSimilarGames([]);
+      setSimilarGamesLoading(false);
+      setSimilarGamesError(null);
       return;
     }
 
@@ -44,10 +51,35 @@ function GameDetailsPage() {
       setLoading(true);
       setError(null);
       setGame(null);
+      setSimilarGames([]);
+      setSimilarGamesLoading(false);
+      setSimilarGamesError(null);
       try {
         const data = await fetchGameDetails(id);
         console.log("Game data:", data);
         setGame(data);
+
+        if (data && data.similar_games && data.similar_games.length > 0) {
+          setSimilarGamesLoading(true);
+          try {
+            const similarData = await fetchGamesByIds(data.similar_games);
+            setSimilarGames(similarData);
+          } catch (simErr) {
+            console.error("Failed to fetch similar games:", simErr);
+            setSimilarGamesError(
+              simErr.message || "Could not load similar games."
+            );
+            notifications.show({
+              title: "Could not load recommendations",
+              message:
+                simErr.message ||
+                "An error occurred while fetching similar games.",
+              color: "orange",
+            });
+          } finally {
+            setSimilarGamesLoading(false);
+          }
+        }
       } catch (err) {
         console.error("Failed to fetch game details:", err);
         setError(err.message || "An unknown error occurred");
@@ -136,11 +168,14 @@ function GameDetailsPage() {
                 </Text>
                 <Carousel
                   withIndicators
-                  loop
-                  align="start"
                   slideSize={{ base: "100%", sm: "50%", md: "33.333333%" }}
                   slideGap={{ base: 0, sm: "md" }}
                   height={200}
+                  emblaOptions={{
+                    loop: true,
+                    align: 'center',
+                    dragFree: false
+                  }}
                 >
                   {game.media.map((mediaItem, index) => (
                     <Carousel.Slide key={mediaItem.url || index}>
@@ -241,13 +276,63 @@ function GameDetailsPage() {
                   Booth Location
                 </Text>
                 <Text size="sm">
-                  <Link to={`/map/${game.booth_number}`} style={{ textDecoration: 'underline', color: 'inherit' }}>
+                  <Link
+                    to={`/map/${game.booth_number}`}
+                    style={{ textDecoration: "underline", color: "inherit" }}
+                  >
                     View Booth {game.booth_number} on Map
                   </Link>
                 </Text>
               </Stack>
             )}
           </Stack>
+
+          {game && game.similar_games && game.similar_games.length > 0 && (
+            <Stack gap="lg" mt="xl">
+              <Title order={2} size="h3">
+                You Might Also Like
+              </Title>
+              {similarGamesLoading && (
+                <Center>
+                  <Loader />
+                </Center>
+              )}
+              {similarGamesError && (
+                <Alert color="orange">{similarGamesError}</Alert>
+              )}
+              {!similarGamesLoading &&
+                !similarGamesError &&
+                similarGames.length > 0 && (
+                  <Carousel
+                    withIndicators
+                    slideSize={{ base: "100%", sm: "50%", md: "33.333333%" }}
+                    slideGap={{ base: "sm", sm: "md" }}
+                    slidesToScroll={1}
+                    containScroll="trimSnaps"
+                    emblaOptions={{
+                      loop: true,
+                      align: 'center',
+                      dragFree: false
+                    }}
+                  >
+                    {similarGames.map((simGame) => (
+                      <Carousel.Slide key={simGame.id}>
+                        <SearchResultCard game={simGame} />
+                      </Carousel.Slide>
+                    ))}
+                  </Carousel>
+                )}
+              {!similarGamesLoading &&
+                !similarGamesError &&
+                similarGames.length === 0 &&
+                !similarGamesError &&
+                game.similar_games.length > 0 && (
+                  <Text size="sm" c="dimmed">
+                    No details found for similar games.
+                  </Text>
+                )}
+            </Stack>
+          )}
         </>
       )}
       {!loading && !error && !game && (

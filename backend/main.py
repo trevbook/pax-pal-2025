@@ -18,7 +18,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 # Local imports (relative)
-from models import Game, MediaItem, Link, SearchResult, GameTableRow
+from models import Game, MediaItem, Link, SearchResult, GameTableRow, GameIdList
 from db import get_db
 from search_utils import hybrid_search
 
@@ -219,15 +219,21 @@ def get_all_games_for_table(
                     "name": row["name"],
                     "snappy_summary": row.get("snappy_summary"),
                     "platforms": platforms if isinstance(platforms, list) else [],
-                    "genres_and_tags": genres_and_tags if isinstance(genres_and_tags, list) else [],
+                    "genres_and_tags": (
+                        genres_and_tags if isinstance(genres_and_tags, list) else []
+                    ),
                 }
                 games_for_table.append(GameTableRow(**game_data))
             except json.JSONDecodeError as e:
-                print(f"JSON decode error for game ID {row.get('id', 'N/A')} while preparing table data: {e} - Data: {row}")
+                print(
+                    f"JSON decode error for game ID {row.get('id', 'N/A')} while preparing table data: {e} - Data: {row}"
+                )
                 # Skip this game or handle error as appropriate, here we skip
                 continue
-            except Exception as e: # Catch Pydantic validation errors or others
-                print(f"Error processing game ID {row.get('id', 'N/A')} for table: {e} - Data: {row}")
+            except Exception as e:  # Catch Pydantic validation errors or others
+                print(
+                    f"Error processing game ID {row.get('id', 'N/A')} for table: {e} - Data: {row}"
+                )
                 continue
 
         return games_for_table
@@ -243,6 +249,75 @@ def get_all_games_for_table(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while retrieving games for table.",
+        )
+
+
+@app.post(
+    "/api/games/by-ids",
+    response_model=List[SearchResult],
+    tags=["Games"],
+    summary="Get multiple games by their IDs",
+    description="Retrieves a list of games as SearchResult objects based on a list of provided game IDs.",
+    responses={
+        200: {"description": "Successfully retrieved game data"},
+        500: {"description": "Internal server error"},
+    },
+)
+def get_games_by_ids(
+    game_ids_payload: GameIdList, db: sqlite3.Connection = Depends(get_db)
+) -> List[SearchResult]:
+    """
+    Retrieves game details suitable for SearchResult display for a list of game IDs.
+
+    - **game_ids_payload**: A Pydantic model containing a list of game IDs.
+    - **db**: Database connection dependency.
+    """
+    if not game_ids_payload.ids:
+        return []
+
+    try:
+        placeholders = ",".join(["?"] * len(game_ids_payload.ids))
+        sql_query = f"""
+            SELECT id, name, snappy_summary, header_image_url
+            FROM games
+            WHERE id IN ({placeholders})
+        """
+        cursor = db.cursor()
+        # Ensure the order of results matches the input IDs if possible,
+        # or handle reordering if necessary. Here, mapping is used.
+        cursor.execute(sql_query, game_ids_payload.ids)
+        rows = cursor.fetchall()  # List of dicts
+
+        # Create a map for quick lookup and to help maintain order if desired,
+        # though SQL IN clause doesn't guarantee order.
+        # For SearchResult, the order might not be strictly critical,
+        # but if it were, we'd reorder based on game_ids_payload.ids.
+        results_map = {row["id"]: SearchResult(**row) for row in rows}
+
+        # Return results in the order of input IDs, filtering out any not found
+        ordered_results = [
+            results_map[game_id]
+            for game_id in game_ids_payload.ids
+            if game_id in results_map
+        ]
+
+        return ordered_results
+
+    except sqlite3.Error as e:
+        print(
+            f"Database error while fetching games by IDs: {game_ids_payload.ids} - {e}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error while retrieving games by IDs.",
+        )
+    except Exception as e:
+        print(
+            f"Unexpected error while fetching games by IDs: {game_ids_payload.ids} - {e}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving games by IDs.",
         )
 
 
@@ -275,7 +350,7 @@ def get_game_details(game_id: str, db: sqlite3.Connection = Depends(get_db)) -> 
             SELECT
                 id, name, snappy_summary, description_texts, platforms,
                 developer, exhibitor, booth_number, header_image_url, steam_link,
-                genres_and_tags, media, released, release_time, links
+                genres_and_tags, media, released, release_time, links, similar_games
             FROM games
             WHERE id = ?
             """,
@@ -355,6 +430,17 @@ def get_game_details(game_id: str, db: sqlite3.Connection = Depends(get_db)) -> 
         media = [MediaItem(**item) for item in media_list]
         links = [Link(**item) for item in links_list]
 
+        # Load and parse similar_games (list of IDs)
+        similar_games_ids_json = row.get("similar_games", "[]")
+        similar_games_ids = json.loads(similar_games_ids_json or "[]")
+        if not isinstance(similar_games_ids, list) or not all(
+            isinstance(i, str) for i in similar_games_ids
+        ):
+            print(
+                f"Warning: similar_games for game {game_id} is not a list of strings. Found: {similar_games_ids}. Defaulting to empty list."
+            )
+            similar_games_ids = []
+
         # Prepare data for the Game model
         game_data = {
             "id": row["id"],
@@ -374,6 +460,7 @@ def get_game_details(game_id: str, db: sqlite3.Connection = Depends(get_db)) -> 
             ),  # Safely convert DB REAL/INT to bool
             "release_time": row.get("release_time"),
             "links": links,
+            "similar_games": similar_games_ids,  # Add the list of similar game IDs
         }
 
         # Validate the final structure with the Game model

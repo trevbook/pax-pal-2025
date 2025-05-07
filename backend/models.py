@@ -80,6 +80,9 @@ class Game(BaseModel):
         default_factory=list,
         description="Collection of external links related to the game",
     )
+    similar_games: List[str] = Field(
+        default_factory=list, description="List of recommended similar games' IDs'"
+    )
 
 
 class GameTableRow(BaseModel):
@@ -87,6 +90,7 @@ class GameTableRow(BaseModel):
     Represents a single row in the "All Games" table.
     Contains a subset of game data relevant for the table view.
     """
+
     id: str = Field(description="Unique identifier for the game")
     name: str = Field(description="Name/title of the game")
     snappy_summary: Optional[str] = Field(
@@ -104,6 +108,7 @@ class SearchResult(BaseModel):
     """
     Represents a single item in search results.
     """
+
     id: str = Field(description="Unique identifier for the game")
     name: str = Field(description="Name/title of the game")
     snappy_summary: Optional[str] = Field(
@@ -113,8 +118,17 @@ class SearchResult(BaseModel):
         None, description="URL to the game's header/banner image"
     )
 
+
 # If you want to define a model for the search query parameters (e.g., if using POST)
 # class SearchQuery(BaseModel):
 #     query: str
 #     limit: Optional[int] = 5
 #     semantic_weight: Optional[float] = 0.7
+
+
+class GameIdList(BaseModel):
+    """
+    Represents a list of game IDs, typically used in request bodies.
+    """
+
+    ids: List[str] = Field(description="A list of game IDs")

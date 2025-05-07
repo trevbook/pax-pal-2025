@@ -8,13 +8,13 @@ import {
   Text,
   Loader,
   Alert,
-  Code,
   Card,
   Image,
   Group,
 } from "@mantine/core";
 import { useNavigate } from "react-router";
 import { searchGames } from "../api"; // Assuming api.js is in the parent directory
+import SearchResultCard from "../components/SearchResultCard";
 
 function SearchPage() {
   const [query, setQuery] = useState("");
@@ -48,7 +48,11 @@ function SearchPage() {
   return (
     <Container style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
       <Center>
-        <Stack align="center" gap="md" style={{ width: "100%", maxWidth: "600px" }}>
+        <Stack
+          align="center"
+          gap="md"
+          style={{ width: "100%", maxWidth: "600px" }}
+        >
           <Text size="xl" fw={700}>
             Search Games
           </Text>
@@ -83,32 +87,7 @@ function SearchPage() {
             <Stack mt="xl" gap="md" style={{ width: "100%" }}>
               <Text fw={500}>Search Results ({results.length}):</Text>
               {results.map((game) => (
-                <Card
-                  key={game.id}
-                  shadow="sm"
-                  padding="lg"
-                  radius="md"
-                  withBorder
-                  onClick={() => navigate(`/game_details?id=${game.id}`)}
-                  style={{ cursor: "pointer", width: "100%" }}
-                >
-                  <Card.Section>
-                    <Image
-                      src={game.header_image_url}
-                      height={180}
-                      alt={game.name || "Game header image"}
-                      loading="lazy"
-                    />
-                  </Card.Section>
-
-                  <Group justify="space-between" mt="md" mb="xs">
-                    <Text fw={700} size="lg">{game.name}</Text>
-                  </Group>
-
-                  <Text size="sm" c="dimmed" italic>
-                    {game.snappy_summary}
-                  </Text>
-                </Card>
+                <SearchResultCard key={game.id} game={game} />
               ))}
             </Stack>
           )}
@@ -118,4 +97,4 @@ function SearchPage() {
   );
 }
 
-export default SearchPage; 
+export default SearchPage;
