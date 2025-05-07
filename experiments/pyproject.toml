@@ -16,6 +16,7 @@ python-levenshtein = "^0.27.1"
 sqlite-vec = "^0.1.6"
 google-cloud-vision = "^3.10.1"
 scikit-learn = "^1.6.1"
+google-auth = "^2.40.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -25,6 +26,7 @@ nbformat = "^5.10.4"
 pickleshare = "^0.7.5"
 tqdm = "^4.67.1"
 python-dotenv = "^1.1.0"
+matplotlib = "^3.10.1"
 
 [build-system]
 requires = ["poetry-core"]

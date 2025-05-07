@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, Link } from "react-router";
 import { Carousel } from "@mantine/carousel";
 import {
   Title,
@@ -232,6 +232,19 @@ function GameDetailsPage() {
                     </List.Item>
                   ))}
                 </List>
+              </Stack>
+            )}
+
+            {game.booth_number && (
+              <Stack gap={4} style={{ minWidth: 0 }}>
+                <Text fw={600} mb={2}>
+                  Booth Location
+                </Text>
+                <Text size="sm">
+                  <Link to={`/map/${game.booth_number}`} style={{ textDecoration: 'underline', color: 'inherit' }}>
+                    View Booth {game.booth_number} on Map
+                  </Link>
+                </Text>
               </Stack>
             )}
           </Stack>

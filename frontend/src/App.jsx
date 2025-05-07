@@ -19,6 +19,7 @@ import SearchPage from "./pages/SearchPage";
 import InfoPage from "./pages/InfoPage";
 import AllGamesPage from "./pages/AllGamesPage";
 import MyGamesPage from "./pages/MyGamesPage";
+import BoothMapHighlightPage from './pages/BoothMapHighlightPage';
 
 function AppContent() {
   const [opened, { toggle }] = useDisclosure(false);
@@ -41,6 +42,7 @@ function AppContent() {
           <Route path="/info" element={<InfoPage />} />
           <Route path="/all-games" element={<AllGamesPage />} />
           <Route path="/my-games" element={<MyGamesPage />} />
+          <Route path="/map/:boothId" element={<BoothMapHighlightPage />} />
         </Routes>
       </AppShell.Main>
     </AppShell>
