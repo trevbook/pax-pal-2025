@@ -9,6 +9,7 @@ import { MantineProvider } from "@mantine/core";
 import RootPage from "./pages/RootPage";
 import GameDetailsPage from "./pages/GameDetailsPage";
 import SearchPage from "./pages/SearchPage";
+import InfoPage from "./pages/InfoPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<RootPage />} />
           <Route path="/game_details" element={<GameDetailsPage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/info" element={<InfoPage />} />
         </Routes>
       </MantineProvider>
     </BrowserRouter>

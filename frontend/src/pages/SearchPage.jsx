@@ -9,7 +9,11 @@ import {
   Loader,
   Alert,
   Code,
+  Card,
+  Image,
+  Group,
 } from "@mantine/core";
+import { useNavigate } from "react-router";
 import { searchGames } from "../api"; // Assuming api.js is in the parent directory
 
 function SearchPage() {
@@ -17,6 +21,7 @@ function SearchPage() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleSearch = async (event) => {
     event.preventDefault(); // Prevent default form submission
@@ -76,10 +81,35 @@ function SearchPage() {
 
           {results && !loading && !error && (
             <Stack mt="xl" gap="md" style={{ width: "100%" }}>
-              <Text fw={500}>Search Results:</Text>
-              <Code block style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                {JSON.stringify(results, null, 2)}
-              </Code>
+              <Text fw={500}>Search Results ({results.length}):</Text>
+              {results.map((game) => (
+                <Card
+                  key={game.id}
+                  shadow="sm"
+                  padding="lg"
+                  radius="md"
+                  withBorder
+                  onClick={() => navigate(`/game_details?id=${game.id}`)}
+                  style={{ cursor: "pointer", width: "100%" }}
+                >
+                  <Card.Section>
+                    <Image
+                      src={game.header_image_url}
+                      height={180}
+                      alt={game.name || "Game header image"}
+                      loading="lazy"
+                    />
+                  </Card.Section>
+
+                  <Group justify="space-between" mt="md" mb="xs">
+                    <Text fw={700} size="lg">{game.name}</Text>
+                  </Group>
+
+                  <Text size="sm" c="dimmed" italic>
+                    {game.snappy_summary}
+                  </Text>
+                </Card>
+              ))}
             </Stack>
           )}
         </Stack>
