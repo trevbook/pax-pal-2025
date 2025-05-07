@@ -1,69 +1,49 @@
 import React, { useState, useEffect } from "react";
-import { Stack, ActionIcon, Checkbox, Tooltip, Modal, Button, Group, Text } from "@mantine/core";
+import {
+  Stack,
+  ActionIcon,
+  Checkbox,
+  Tooltip,
+  Modal,
+  Button,
+  Group,
+  Text,
+} from "@mantine/core";
 import {
   IconTrash,
-  IconBookmarkPlus,
-  IconBookmarkFilled,
+  IconHeartPlus,
+  IconHeartFilled,
   IconDeviceGamepad,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
-
-// localStorage helper functions (ideally from a utils file)
-const getMyGamesFromStorage = () => {
-  const games = localStorage.getItem("myGames");
-  return games ? JSON.parse(games) : [];
-};
-
-const addGameToMyGamesInStorage = (game) => {
-  if (!game || !game.id) return;
-  const games = getMyGamesFromStorage();
-  if (!games.find((g) => g.id === game.id)) {
-    games.push(game);
-    localStorage.setItem("myGames", JSON.stringify(games));
-  }
-};
-
-const removeGameFromMyGamesInStorage = (gameId) => {
-  if (!gameId) return;
-  let games = getMyGamesFromStorage();
-  games = games.filter((g) => g.id !== gameId);
-  localStorage.setItem("myGames", JSON.stringify(games));
-};
-
-const getPlayedGamesStatusFromStorage = () => {
-  const statuses = localStorage.getItem("playedGames");
-  return statuses ? JSON.parse(statuses) : {};
-};
-
-const updatePlayedGameStatusInStorage = (gameId, isPlayed) => {
-  const statuses = getPlayedGamesStatusFromStorage();
-  if (isPlayed) {
-    statuses[gameId] = true;
-  } else {
-    delete statuses[gameId];
-  }
-  localStorage.setItem("playedGames", JSON.stringify(statuses));
-  return statuses;
-};
-// End localStorage helper functions
+import {
+  getFavoriteGames,
+  addGameToFavorites,
+  removeGameFromFavorites,
+  getPlayedGamesStatus,
+  updatePlayedGameStatus,
+} from "../utils/localStorageUtils";
 
 function GameActions({
   game,
   initialIsPlayed,
-  initialIsInMyGames,
+  initialIsFavorited,
   onGameRemoved,
+  onGameUnfavorited,
+  onGameUnplayed,
 }) {
   const [isPlayed, setIsPlayed] = useState(initialIsPlayed);
-  const [isInMyGames, setIsInMyGames] = useState(initialIsInMyGames);
-  const [modalOpened, setModalOpened] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
+  const [removeFavoriteModalOpened, setRemoveFavoriteModalOpened] = useState(false);
+  const [unplayConfirmModalOpened, setUnplayConfirmModalOpened] = useState(false);
 
   useEffect(() => {
     setIsPlayed(initialIsPlayed);
   }, [initialIsPlayed]);
 
   useEffect(() => {
-    setIsInMyGames(initialIsInMyGames);
-  }, [initialIsInMyGames]);
+    setIsFavorited(initialIsFavorited);
+  }, [initialIsFavorited]);
 
   if (!game || !game.id) {
     return null;
@@ -73,100 +53,128 @@ function GameActions({
     // event.stopPropagation();
   };
 
+  const openUnplayConfirmModal = () => {
+    setUnplayConfirmModalOpened(true);
+  };
+
+  const confirmUnplayGame = () => {
+    updatePlayedGameStatus(game.id, false);
+    setIsPlayed(false);
+    setUnplayConfirmModalOpened(false);
+    notifications.show({
+      title: "Game Status Updated",
+      message: `"${game.name}" marked as unplayed.`,
+      color: "blue",
+    });
+    if (typeof onGameUnplayed === "function") {
+      onGameUnplayed(game.id);
+    }
+  };
+
   const handleTogglePlayed = () => {
-    const newIsPlayed = !isPlayed;
-    updatePlayedGameStatusInStorage(game.id, newIsPlayed);
-    setIsPlayed(newIsPlayed);
-    if (newIsPlayed) {
+    if (isPlayed) {
+      openUnplayConfirmModal();
+    } else {
+      updatePlayedGameStatus(game.id, true);
+      setIsPlayed(true);
       notifications.show({
         title: "Game Status Updated",
         message: `"${game.name}" marked as played! ✅`,
         color: "green",
       });
-    } else {
-      notifications.show({
-        title: "Game Status Updated",
-        message: `"${game.name}" removed from your played games.`,
-        color: "blue",
-      });
     }
   };
 
-  const handleAddGame = () => {
-    addGameToMyGamesInStorage(game);
-    setIsInMyGames(true);
+  const handleAddFavorite = () => {
+    addGameToFavorites(game);
+    setIsFavorited(true);
     notifications.show({
-      title: "Game Added",
-      message: `${game.name} has been added to My Games! 🎉`,
-      color: "green",
+      title: "Game Favorited",
+      message: `${game.name} has been added to Favorites! ❤️`,
+      color: "pink",
     });
   };
 
-  const openRemoveConfirmModal = () => {
-    setModalOpened(true);
+  const openRemoveFavoriteConfirmModal = () => {
+    setRemoveFavoriteModalOpened(true);
   };
 
-  const confirmRemoveGame = () => {
-    removeGameFromMyGamesInStorage(game.id);
-    setIsInMyGames(false);
-    setModalOpened(false);
+  const confirmRemoveFavorite = () => {
+    removeGameFromFavorites(game.id);
+    setIsFavorited(false);
+    setRemoveFavoriteModalOpened(false);
     notifications.show({
-      title: "Game Removed",
-      message: `${game.name} has been removed from My Games. 👋`,
+      title: "Game Unfavorited",
+      message: `${game.name} has been removed from Favorites. 👋`,
       color: "red",
     });
-    if (typeof onGameRemoved === "function") {
-      onGameRemoved(game.id);
+    if (typeof onGameUnfavorited === "function") {
+      onGameUnfavorited(game.id);
     }
   };
 
-  // Unified GameActions UI (no pageType distinction)
   return (
     <>
       <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title="Confirm Removal"
+        opened={removeFavoriteModalOpened}
+        onClose={() => setRemoveFavoriteModalOpened(false)}
+        title="Confirm Unfavorite"
         centered
       >
         <Text size="sm">
           Are you sure you want to remove {game?.name || "this game"} from your
-          list? This action cannot be undone.
+          Favorites?
         </Text>
         <Group mt="md">
-          <Button variant="outline" onClick={() => setModalOpened(false)}>
+          <Button variant="outline" onClick={() => setRemoveFavoriteModalOpened(false)}>
             Cancel
           </Button>
-          <Button color="red" onClick={confirmRemoveGame}>
-            Remove Game
+          <Button color="red" onClick={confirmRemoveFavorite}>
+            Unfavorite Game
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={unplayConfirmModalOpened}
+        onClose={() => setUnplayConfirmModalOpened(false)}
+        title="Confirm Mark as Unplayed"
+        centered
+      >
+        <Text size="sm">
+          Are you sure you want to mark {game?.name || "this game"} as unplayed?
+        </Text>
+        <Group mt="md">
+          <Button variant="outline" onClick={() => setUnplayConfirmModalOpened(false)}>
+            Cancel
+          </Button>
+          <Button color="blue" onClick={confirmUnplayGame}>
+            Mark as Unplayed
           </Button>
         </Group>
       </Modal>
 
       <Stack gap="xs" align="center" onClickCapture={handleStackClick}>
-        {/* My Games Add/Remove Button */}
         <Tooltip
-          label={isInMyGames ? "Remove from My Games" : "Add to My Games"}
+          label={isFavorited ? "Remove from Favorites" : "Add to Favorites"}
           withArrow
           position="top"
         >
           <ActionIcon
-            onClick={
-              isInMyGames ? openRemoveConfirmModal : handleAddGame
-            }
-            variant={isInMyGames ? "filled" : "outline"}
-            color={isInMyGames ? "red" : "blue"}
+            onClick={isFavorited ? openRemoveFavoriteConfirmModal : handleAddFavorite}
+            variant={isFavorited ? "filled" : "outline"}
+            color={isFavorited ? "red" : "pink"}
             size="lg"
+            aria-label={isFavorited ? "Remove from Favorites" : "Add to Favorites"}
           >
-            {isInMyGames ? (
-              <IconBookmarkFilled size={20} />
+            {isFavorited ? (
+              <IconHeartFilled size={20} />
             ) : (
-              <IconBookmarkPlus size={20} />
+              <IconHeartPlus size={20} />
             )}
           </ActionIcon>
         </Tooltip>
 
-        {/* Played/Unplayed Toggle Button */}
         <Tooltip
           label={isPlayed ? "Mark as Unplayed" : "Mark as Played"}
           withArrow

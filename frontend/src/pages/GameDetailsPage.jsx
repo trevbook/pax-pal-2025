@@ -20,46 +20,10 @@ import {
 import { notifications } from "@mantine/notifications";
 import { fetchGameDetails } from "../api";
 import GameActions from "../components/GameActions";
-
-// Helper functions for localStorage (can be moved to a utils file later)
-const getMyGames = () => {
-  const games = localStorage.getItem("myGames");
-  return games ? JSON.parse(games) : [];
-};
-
-const addGameToMyGames = (game) => {
-  if (!game || !game.id) return; // Do nothing if game or game.id is undefined
-  const games = getMyGames();
-  if (!games.find((g) => g.id === game.id)) {
-    games.push(game);
-    localStorage.setItem("myGames", JSON.stringify(games));
-  }
-};
-
-const removeGameFromMyGames = (gameId) => {
-  if (!gameId) return; // Do nothing if gameId is undefined
-  let games = getMyGames();
-  games = games.filter((g) => g.id !== gameId);
-  localStorage.setItem("myGames", JSON.stringify(games));
-};
-
-// Helper function to get played games status from localStorage
-const getPlayedGamesStatus = () => {
-  const statuses = localStorage.getItem("playedGames");
-  return statuses ? JSON.parse(statuses) : {}; // e.g., { "gameId1": true }
-};
-
-// Helper function to update played status for a game in localStorage
-const updatePlayedGameStatusInStorage = (gameId, isPlayed) => {
-  const statuses = getPlayedGamesStatus();
-  if (isPlayed) {
-    statuses[gameId] = true;
-  } else {
-    delete statuses[gameId]; // Remove key if not played for cleaner storage
-  }
-  localStorage.setItem("playedGames", JSON.stringify(statuses));
-  return statuses; // Return updated statuses map
-};
+import {
+  getFavoriteGameIds,
+  getPlayedGameIds,
+} from "../utils/localStorageUtils";
 
 function GameDetailsPage() {
   const [searchParams] = useSearchParams();
@@ -67,21 +31,12 @@ function GameDetailsPage() {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isInMyGames, setIsInMyGames] = useState(false);
-  const [playedGames, setPlayedGames] = useState({}); // New state for played games
-
-  useEffect(() => {
-    // Load played games status on component mount
-    setPlayedGames(getPlayedGamesStatus());
-  }, []);
 
   useEffect(() => {
     if (!id) {
       setGame(null);
       setLoading(false);
       setError(null);
-      setIsInMyGames(false);
-      // playedGames state is managed by its own useEffect and persists globally
       return;
     }
 
@@ -89,16 +44,10 @@ function GameDetailsPage() {
       setLoading(true);
       setError(null);
       setGame(null);
-      setIsInMyGames(false);
       try {
         const data = await fetchGameDetails(id);
         console.log("Game data:", data);
         setGame(data);
-        if (data && data.id) {
-          const myGames = getMyGames();
-          setIsInMyGames(!!myGames.find((g) => g.id === data.id));
-          // playedGames is already loaded by the other useEffect
-        }
       } catch (err) {
         console.error("Failed to fetch game details:", err);
         setError(err.message || "An unknown error occurred");
@@ -109,42 +58,6 @@ function GameDetailsPage() {
 
     loadGameData();
   }, [id]);
-
-  const handleGameRemovedFromActionsDetails = (removedGameId) => {
-    // This function is called by GameActions after a game is removed.
-    // We only need to update the isInMyGames state for this page.
-    if (game && game.id === removedGameId) {
-      setIsInMyGames(false);
-    }
-    // Notification is handled by GameActions.
-  };
-
-  const handleTogglePlayedDetails = () => {
-    if (!game || !game.id) return;
-
-    const gameId = game.id;
-    const gameName = game.name;
-    const newIsPlayed = !playedGames[gameId];
-    const updatedPlayedGamesMap = updatePlayedGameStatusInStorage(
-      gameId,
-      newIsPlayed
-    );
-    setPlayedGames(updatedPlayedGamesMap);
-
-    if (newIsPlayed) {
-      notifications.show({
-        title: "Game Status Updated",
-        message: `"${gameName}" marked as played! ✅`,
-        color: "green",
-      });
-    } else {
-      notifications.show({
-        title: "Game Status Updated",
-        message: `"${gameName}" removed from your played games.`,
-        color: "blue",
-      });
-    }
-  };
 
   return (
     <Container pb="xl">
@@ -175,23 +88,29 @@ function GameDetailsPage() {
             )}
           <Group wrap="nowrap" align="center" justify="space-between">
             <Stack gap={0} style={{ flexGrow: 1 }}>
-              <Title order={1}>
-                {game.name}
-              </Title>
+              <Title order={1}>{game.name}</Title>
               {game.snappy_summary && (
                 <Text size="md" c="dimmed" fs="italic" mt={4}>
                   {game.snappy_summary}
                 </Text>
               )}
             </Stack>
-            {game && game.id && (
-              <GameActions
-                game={game}
-                initialIsPlayed={!!playedGames[game.id]}
-                initialIsInMyGames={isInMyGames}
-                onGameRemoved={handleGameRemovedFromActionsDetails}
-              />
-            )}
+            {game &&
+              game.id &&
+              (() => {
+                const favoriteIds = getFavoriteGameIds();
+                const playedIds = getPlayedGameIds();
+                const isFavorited = favoriteIds.includes(game.id);
+                const isPlayed = playedIds.includes(game.id);
+
+                return (
+                  <GameActions
+                    game={game}
+                    initialIsPlayed={isPlayed}
+                    initialIsFavorited={isFavorited}
+                  />
+                );
+              })()}
           </Group>
 
           <Divider my="md" />
