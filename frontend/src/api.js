@@ -46,4 +46,19 @@ export async function searchGames(query, semanticWeight, limit) {
   }
 
   return await response.json();
+}
+
+export async function fetchAllGames() {
+  const response = await fetch(`${API_BASE_URL}/games/all`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage =
+      errorData.detail ||
+      `Error fetching all games: ${response.status} ${response.statusText}`;
+    console.error("API Error:", errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
 } 

@@ -10,6 +10,7 @@ import RootPage from "./pages/RootPage";
 import GameDetailsPage from "./pages/GameDetailsPage";
 import SearchPage from "./pages/SearchPage";
 import InfoPage from "./pages/InfoPage";
+import AllGamesPage from "./pages/AllGamesPage";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/game_details" element={<GameDetailsPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/info" element={<InfoPage />} />
+          <Route path="/all-games" element={<AllGamesPage />} />
         </Routes>
       </MantineProvider>
     </BrowserRouter>

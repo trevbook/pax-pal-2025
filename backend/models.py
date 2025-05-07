@@ -82,6 +82,24 @@ class Game(BaseModel):
     )
 
 
+class GameTableRow(BaseModel):
+    """
+    Represents a single row in the "All Games" table.
+    Contains a subset of game data relevant for the table view.
+    """
+    id: str = Field(description="Unique identifier for the game")
+    name: str = Field(description="Name/title of the game")
+    snappy_summary: Optional[str] = Field(
+        None, description="Brief catchy summary of the game"
+    )
+    platforms: List[str] = Field(
+        default_factory=list, description="List of platforms the game is available on"
+    )
+    genres_and_tags: List[str] = Field(
+        default_factory=list, description="List of genres and tags describing the game"
+    )
+
+
 class SearchResult(BaseModel):
     """
     Represents a single item in search results.

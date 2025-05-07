@@ -18,7 +18,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 # Local imports (relative)
-from models import Game, MediaItem, Link, SearchResult
+from models import Game, MediaItem, Link, SearchResult, GameTableRow
 from db import get_db
 from search_utils import hybrid_search
 
@@ -176,6 +176,73 @@ def search_games(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during search.",
+        )
+
+
+@app.get(
+    "/api/games/all",
+    response_model=List[GameTableRow],
+    tags=["Games"],
+    summary="Get all games for table view",
+    description="Retrieves a summarized list of all games, suitable for a table display.",
+    responses={
+        500: {"description": "Internal server error retrieving games"},
+    },
+)
+def get_all_games_for_table(
+    db: sqlite3.Connection = Depends(get_db),
+) -> List[GameTableRow]:
+    """
+    Retrieves specific fields for all games to be displayed in a table.
+
+    Returns a list of games with their ID, name, snappy summary, platforms,
+    and genres/tags.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute(
+            """
+            SELECT id, name, snappy_summary, platforms, genres_and_tags
+            FROM games
+            """
+        )
+        rows = cursor.fetchall()  # Returns list of dicts due to row_factory
+
+        games_for_table = []
+        for row in rows:
+            try:
+                platforms = json.loads(row.get("platforms", "[]") or "[]")
+                genres_and_tags = json.loads(row.get("genres_and_tags", "[]") or "[]")
+
+                game_data = {
+                    "id": row["id"],
+                    "name": row["name"],
+                    "snappy_summary": row.get("snappy_summary"),
+                    "platforms": platforms if isinstance(platforms, list) else [],
+                    "genres_and_tags": genres_and_tags if isinstance(genres_and_tags, list) else [],
+                }
+                games_for_table.append(GameTableRow(**game_data))
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error for game ID {row.get('id', 'N/A')} while preparing table data: {e} - Data: {row}")
+                # Skip this game or handle error as appropriate, here we skip
+                continue
+            except Exception as e: # Catch Pydantic validation errors or others
+                print(f"Error processing game ID {row.get('id', 'N/A')} for table: {e} - Data: {row}")
+                continue
+
+        return games_for_table
+
+    except sqlite3.Error as e:
+        print(f"Database error while fetching all games for table: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error while retrieving games for table.",
+        )
+    except Exception as e:
+        print(f"Unexpected error while fetching all games for table: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving games for table.",
         )
 
 
