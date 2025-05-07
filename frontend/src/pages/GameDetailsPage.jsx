@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
-import { Carousel } from '@mantine/carousel';
+import { Carousel } from "@mantine/carousel";
 import {
   Title,
   Text,
@@ -16,12 +16,11 @@ import {
   List,
   Button,
   Modal,
-  ActionIcon,
   Tooltip,
 } from "@mantine/core";
-import { notifications } from '@mantine/notifications';
-import { IconBookmarkPlus, IconBookmarkFilled } from '@tabler/icons-react';
+import { notifications } from "@mantine/notifications";
 import { fetchGameDetails } from "../api";
+import GameActions from "../components/GameActions";
 
 // Helper functions for localStorage (can be moved to a utils file later)
 const getMyGames = () => {
@@ -32,7 +31,7 @@ const getMyGames = () => {
 const addGameToMyGames = (game) => {
   if (!game || !game.id) return; // Do nothing if game or game.id is undefined
   const games = getMyGames();
-  if (!games.find(g => g.id === game.id)) {
+  if (!games.find((g) => g.id === game.id)) {
     games.push(game);
     localStorage.setItem("myGames", JSON.stringify(games));
   }
@@ -41,8 +40,26 @@ const addGameToMyGames = (game) => {
 const removeGameFromMyGames = (gameId) => {
   if (!gameId) return; // Do nothing if gameId is undefined
   let games = getMyGames();
-  games = games.filter(g => g.id !== gameId);
+  games = games.filter((g) => g.id !== gameId);
   localStorage.setItem("myGames", JSON.stringify(games));
+};
+
+// Helper function to get played games status from localStorage
+const getPlayedGamesStatus = () => {
+  const statuses = localStorage.getItem("playedGames");
+  return statuses ? JSON.parse(statuses) : {}; // e.g., { "gameId1": true }
+};
+
+// Helper function to update played status for a game in localStorage
+const updatePlayedGameStatusInStorage = (gameId, isPlayed) => {
+  const statuses = getPlayedGamesStatus();
+  if (isPlayed) {
+    statuses[gameId] = true;
+  } else {
+    delete statuses[gameId]; // Remove key if not played for cleaner storage
+  }
+  localStorage.setItem("playedGames", JSON.stringify(statuses));
+  return statuses; // Return updated statuses map
 };
 
 function GameDetailsPage() {
@@ -53,6 +70,12 @@ function GameDetailsPage() {
   const [error, setError] = useState(null);
   const [isInMyGames, setIsInMyGames] = useState(false);
   const [modalOpened, setModalOpened] = useState(false);
+  const [playedGames, setPlayedGames] = useState({}); // New state for played games
+
+  useEffect(() => {
+    // Load played games status on component mount
+    setPlayedGames(getPlayedGamesStatus());
+  }, []);
 
   useEffect(() => {
     if (!id) {
@@ -60,7 +83,7 @@ function GameDetailsPage() {
       setLoading(false);
       setError(null);
       setIsInMyGames(false);
-      setModalOpened(false);
+      // playedGames state is managed by its own useEffect and persists globally
       return;
     }
 
@@ -76,7 +99,8 @@ function GameDetailsPage() {
         setGame(data);
         if (data && data.id) {
           const myGames = getMyGames();
-          setIsInMyGames(!!myGames.find(g => g.id === data.id));
+          setIsInMyGames(!!myGames.find((g) => g.id === data.id));
+          // playedGames is already loaded by the other useEffect
         }
       } catch (err) {
         console.error("Failed to fetch game details:", err);
@@ -98,10 +122,9 @@ function GameDetailsPage() {
       addGameToMyGames(game);
       setIsInMyGames(true);
       notifications.show({
-        title: 'Game Added',
+        title: "Game Added",
         message: `${game.name} has been added to My Games! 🎉`,
-        color: 'green',
-        icon: <IconBookmarkPlus size={18} />,
+        color: "green",
       });
     }
   };
@@ -113,11 +136,37 @@ function GameDetailsPage() {
     setIsInMyGames(false);
     setModalOpened(false);
     notifications.show({
-      title: 'Game Removed',
+      title: "Game Removed",
       message: `${gameName} has been removed from My Games. 👋`,
-      color: 'red',
-      icon: <IconBookmarkFilled size={18} />
+      color: "red",
     });
+  };
+
+  const handleTogglePlayedDetails = () => {
+    if (!game || !game.id) return;
+
+    const gameId = game.id;
+    const gameName = game.name;
+    const newIsPlayed = !playedGames[gameId];
+    const updatedPlayedGamesMap = updatePlayedGameStatusInStorage(
+      gameId,
+      newIsPlayed
+    );
+    setPlayedGames(updatedPlayedGamesMap);
+
+    if (newIsPlayed) {
+      notifications.show({
+        title: "Game Status Updated",
+        message: `"${gameName}" marked as played! ✅`,
+        color: "green",
+      });
+    } else {
+      notifications.show({
+        title: "Game Status Updated",
+        message: `"${gameName}" removed from your played games.`,
+        color: "blue",
+      });
+    }
   };
 
   return (
@@ -128,7 +177,10 @@ function GameDetailsPage() {
         title="Confirm Removal"
         centered
       >
-        <Text size="sm">Are you sure you want to remove {game?.name || 'this game'} from your list?</Text>
+        <Text size="sm">
+          Are you sure you want to remove {game?.name || "this game"} from your
+          list?
+        </Text>
         <Group mt="md">
           <Button variant="outline" onClick={() => setModalOpened(false)}>
             Cancel
@@ -164,46 +216,41 @@ function GameDetailsPage() {
                 />
               </Center>
             )}
-          <Group wrap="nowrap" align="flex-start" gap="sm" mb="md">
-            <Title order={1} style={{ flexGrow: 1 }}>
-              {game.name}
-            </Title>
+          <Group wrap="nowrap" align="center" gap="sm">
+            <Group gap={0}>
+              <Title order={1} style={{ flexGrow: 1 }}>
+                {game.name}
+              </Title>
+              {game.snappy_summary && (
+                <Text size="md" c="dimmed" fs="italic" mt={4}>
+                  {game.snappy_summary}
+                </Text>
+              )}
+            </Group>
             {game && game.id && (
-              <Tooltip 
-                label={isInMyGames ? "Remove from My Games" : "Add to My Games"} 
-                withArrow 
-                position="top"
-              >
-                <ActionIcon 
-                  onClick={handleToggleMyGames}
-                  variant={isInMyGames ? "filled" : "outline"} 
-                  color={isInMyGames ? "red" : "blue"}
-                  size="lg"
-                >
-                  {isInMyGames ? <IconBookmarkFilled size={20} /> : <IconBookmarkPlus size={20} />}
-                </ActionIcon>
-              </Tooltip>
+              <GameActions
+                game={game}
+                initialIsPlayed={!!playedGames[game.id]}
+                initialIsInMyGames={isInMyGames}
+              />
             )}
           </Group>
-          {game.snappy_summary && (
-            <Text size="md" c="dimmed" fs="italic" mt={4} mb="md">
-              {game.snappy_summary}
-            </Text>
-          )}
 
           <Divider my="md" />
 
           <Stack gap="lg">
-            {game.description && typeof game.description === "string" && game.description.trim() !== "" && (
-              <Stack gap={4} style={{ minWidth: 0 }}>
-                <Text fw={600} mb={2}>
-                  Description
-                </Text>
-                <Text size="sm" style={{ whiteSpace: "pre-line" }}>
-                  {game.description}
-                </Text>
-              </Stack>
-            )}
+            {game.description &&
+              typeof game.description === "string" &&
+              game.description.trim() !== "" && (
+                <Stack gap={4} style={{ minWidth: 0 }}>
+                  <Text fw={600} mb={2}>
+                    Description
+                  </Text>
+                  <Text size="sm" style={{ whiteSpace: "pre-line" }}>
+                    {game.description}
+                  </Text>
+                </Stack>
+              )}
 
             {Array.isArray(game.media) && game.media.length > 0 && (
               <Stack gap={4} style={{ minWidth: 0 }}>
@@ -234,7 +281,11 @@ function GameDetailsPage() {
                           src={mediaItem.url}
                           controls
                           preload="metadata"
-                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                          }}
                         />
                       )}
                     </Carousel.Slide>
