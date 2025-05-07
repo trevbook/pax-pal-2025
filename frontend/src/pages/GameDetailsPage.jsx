@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
+import { Carousel } from '@mantine/carousel';
 import {
   Title,
   Text,
@@ -71,8 +72,8 @@ function GameDetailsPage() {
                 <Image
                   src={game.header_image_url}
                   alt={game.name ? `${game.name} header` : "Game header"}
-                  radius="md"
-                  h={200}
+                  radius="lg"
+                  h={200} // Increased header image height for a more prominent look
                   fit="contain"
                 />
               </Center>
@@ -88,19 +89,60 @@ function GameDetailsPage() {
 
           <Divider my="md" />
 
-          {/* Description Section */}
-          {game.description && typeof game.description === "string" && game.description.trim() !== "" && (
-            <Stack gap={4} style={{ minWidth: 0 }} mb="md">
-              <Text fw={600} mb={2}>
-                Description
-              </Text>
-              <Text size="sm" style={{ whiteSpace: "pre-line" }}>
-                {game.description}
-              </Text>
-            </Stack>
-          )}
-
+          {/* Everything below the divider is now in a single Stack for consistent spacing */}
           <Stack gap="lg">
+            {/* Description Section */}
+            {game.description && typeof game.description === "string" && game.description.trim() !== "" && (
+              <Stack gap={4} style={{ minWidth: 0 }}>
+                <Text fw={600} mb={2}>
+                  Description
+                </Text>
+                <Text size="sm" style={{ whiteSpace: "pre-line" }}>
+                  {game.description}
+                </Text>
+              </Stack>
+            )}
+
+            {/* Media Carousel Section */}
+            {Array.isArray(game.media) && game.media.length > 0 && (
+              <Stack gap={4} style={{ minWidth: 0 }}>
+                <Text fw={600} mb={2}>
+                  Media
+                </Text>
+                <Carousel
+                  withIndicators
+                  loop
+                  align="start"
+                  slideSize={{ base: "100%", sm: "50%", md: "33.333333%" }}
+                  slideGap={{ base: 0, sm: "md" }}
+                  height={200} // Adjust height as needed
+                >
+                  {game.media.map((mediaItem, index) => (
+                    <Carousel.Slide key={mediaItem.url || index}>
+                      {mediaItem.type === "image" && (
+                        <Image
+                          src={mediaItem.url}
+                          alt={`Game media ${index + 1}`}
+                          fit="contain"
+                          h="100%"
+                          loading="lazy"
+                        />
+                      )}
+                      {mediaItem.type === "video" && (
+                        <video
+                          src={mediaItem.url}
+                          controls
+                          preload="metadata"
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        />
+                      )}
+                    </Carousel.Slide>
+                  ))}
+                </Carousel>
+              </Stack>
+            )}
+
+            {/* Genres Section */}
             <Stack gap={4} style={{ minWidth: 0 }}>
               <Text fw={600} mb={2}>
                 Genres
@@ -120,6 +162,8 @@ function GameDetailsPage() {
                 )}
               </Group>
             </Stack>
+
+            {/* Platforms Section */}
             <Stack gap={4} style={{ minWidth: 0 }}>
               <Text fw={600} mb={2}>
                 Platforms
@@ -138,6 +182,7 @@ function GameDetailsPage() {
                 )}
               </Group>
             </Stack>
+
             {/* Links Section */}
             {Array.isArray(game.links) && game.links.length > 0 && (
               <Stack gap={4} style={{ minWidth: 0 }}>

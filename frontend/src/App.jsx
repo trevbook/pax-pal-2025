@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router";
 // Import styles of packages that you've installed.
 import "@mantine/core/styles.css";
+import "@mantine/carousel/styles.css";
 
 import { MantineProvider } from "@mantine/core";
 
