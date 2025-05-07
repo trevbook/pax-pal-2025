@@ -55,6 +55,12 @@ spec:
             # requests:
             #   cpu: "500m"
             #   memory: "256Mi"
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key # The name of the secret in Google Secret Manager
+                  key: "latest" # Use the latest version of the secret
           # env: # Example for setting environment variables for the backend
           #   - name: PYTHONUNBUFFERED
           #     value: "1" # Often useful for Python logs in containers

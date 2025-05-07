@@ -80,3 +80,23 @@ class Game(BaseModel):
         default_factory=list,
         description="Collection of external links related to the game",
     )
+
+
+class SearchResult(BaseModel):
+    """
+    Represents a single item in search results.
+    """
+    id: str = Field(description="Unique identifier for the game")
+    name: str = Field(description="Name/title of the game")
+    snappy_summary: Optional[str] = Field(
+        None, description="Brief catchy summary of the game"
+    )
+    header_image_url: Optional[str] = Field(
+        None, description="URL to the game's header/banner image"
+    )
+
+# If you want to define a model for the search query parameters (e.g., if using POST)
+# class SearchQuery(BaseModel):
+#     query: str
+#     limit: Optional[int] = 5
+#     semantic_weight: Optional[float] = 0.7

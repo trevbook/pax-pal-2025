@@ -10,15 +10,17 @@ Defines API routes and application configuration.
 # General imports
 import json
 import sqlite3
+from typing import List, Optional
 
 # Third-party imports
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 # Local imports (relative)
-from models import Game, MediaItem, Link
+from models import Game, MediaItem, Link, SearchResult
 from db import get_db
+from search_utils import hybrid_search
 
 
 # ===============
@@ -34,10 +36,10 @@ app = FastAPI(
 # --- CORS Configuration ---
 # Adjust origins as needed for development and production
 origins = [
-    "http://localhost",        # Allow requests from any port on localhost
-    "http://localhost:5173",   # Explicitly allow Vite dev server default port
-    "http://127.0.0.1",      # Allow requests from 127.0.0.1
-    "http://127.0.0.1:5173", # Explicitly allow Vite dev server default port via IP
+    "http://localhost",  # Allow requests from any port on localhost
+    "http://localhost:5173",  # Explicitly allow Vite dev server default port
+    "http://127.0.0.1",  # Allow requests from 127.0.0.1
+    "http://127.0.0.1:5173",  # Explicitly allow Vite dev server default port via IP
     # Add your production frontend URL here when you deploy
     # e.g., "https://your-app-name.run.app"
 ]
@@ -45,9 +47,9 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,  # List of origins allowed
-    allow_credentials=True, # Allow cookies/auth headers
-    allow_methods=["*"],    # Allow all methods (GET, POST, etc.)
-    allow_headers=["*"],    # Allow all headers
+    allow_credentials=True,  # Allow cookies/auth headers
+    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
 )
 
 # --- Database Setup ---
@@ -63,7 +65,7 @@ DATABASE_URL = "./paxpal.db"
     tags=["Health"],
     summary="Application Health Check",
     description="Returns a 200 OK if the application is healthy and ready to serve requests.",
-    status_code=status.HTTP_200_OK, # Explicitly set the success status code
+    status_code=status.HTTP_200_OK,  # Explicitly set the success status code
 )
 async def health_check():
     """
@@ -82,6 +84,99 @@ async def health_check():
 def read_root():
     """Returns a simple welcome message for the API root."""
     return {"message": "Welcome to the Pax Pal API!"}
+
+
+@app.get(
+    "/api/search",
+    response_model=List[SearchResult],
+    tags=["Search"],
+    summary="Search for games",
+    description="Performs a hybrid search (semantic + full-text) for games based on a query string.",
+    responses={
+        500: {"description": "Internal server error during search"},
+    },
+)
+def search_games(
+    q: str = Query(..., min_length=1, description="The search query string."),
+    semantic_weight: Optional[float] = Query(
+        0.7, ge=0.0, le=1.0, description="Weight for semantic search (0.0 to 1.0)."
+    ),
+    limit: Optional[int] = Query(
+        5, ge=1, le=50, description="Number of search results to return."
+    ),
+    db: sqlite3.Connection = Depends(get_db),
+) -> List[SearchResult]:
+    """
+    Searches for games using a hybrid approach (semantic and full-text search).
+
+    - **q**: The search query string.
+    - **semantic_weight**: The influence of semantic search in the ranking.
+                           Lexical search weight is `1.0 - semantic_weight`.
+    - **limit**: Maximum number of results to return.
+    - **db**: Database connection dependency.
+    """
+    if (
+        semantic_weight is None
+    ):  # Handle case where Optional is not set by client but has default in Query
+        semantic_weight = 0.7
+    if limit is None:
+        limit = 5
+
+    try:
+        game_ids = hybrid_search(
+            db=db,
+            query_text=q,
+            semantic_weight=semantic_weight,
+            limit=limit,
+            # k_semantic and k_fts will use their defaults from hybrid_search
+        )
+
+        if not game_ids:
+            return []
+
+        # Prepare a query to fetch game details for the found IDs
+        # Ensuring the order of results from hybrid_search is maintained.
+        placeholders = ",".join(["?"] * len(game_ids))
+        sql_query = f"""
+            SELECT id, name, snappy_summary, header_image_url
+            FROM games
+            WHERE id IN ({placeholders})
+        """
+        # print(f"Executing SQL: {sql_query} with IDs: {game_ids}")
+
+        cursor = db.cursor()
+        cursor.execute(sql_query, game_ids)
+        rows = cursor.fetchall()  # Returns list of dicts due to row_factory
+
+        # To maintain the order from hybrid_search, we'll map results
+        # from the IN query (which doesn't guarantee order) back to game_ids order.
+        results_map = {row["id"]: SearchResult(**row) for row in rows}
+        ordered_results = [
+            results_map[game_id] for game_id in game_ids if game_id in results_map
+        ]
+
+        return ordered_results
+
+    except sqlite3.Error as e:
+        print(f"Database error during search for query '{q}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error during search.",
+        )
+    except RuntimeError as e:  # Catch errors from get_embedding_for_query
+        print(
+            f"Runtime error during search (e.g., embedding generation) for query '{q}': {e}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing search query: {e}",
+        )
+    except Exception as e:
+        print(f"Unexpected error during search for query '{q}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during search.",
+        )
 
 
 @app.get(
