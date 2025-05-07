@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Stack, ActionIcon, Checkbox, Tooltip } from "@mantine/core";
+import { Stack, ActionIcon, Checkbox, Tooltip, Modal, Button, Group, Text } from "@mantine/core";
 import {
   IconTrash,
   IconBookmarkPlus,
@@ -51,10 +51,11 @@ function GameActions({
   game,
   initialIsPlayed,
   initialIsInMyGames,
-  onOpenRemoveModal,
+  onGameRemoved,
 }) {
   const [isPlayed, setIsPlayed] = useState(initialIsPlayed);
   const [isInMyGames, setIsInMyGames] = useState(initialIsInMyGames);
+  const [modalOpened, setModalOpened] = useState(false);
 
   useEffect(() => {
     setIsPlayed(initialIsPlayed);
@@ -91,70 +92,98 @@ function GameActions({
     }
   };
 
-  const handleToggleMyGames = () => {
-    const newIsInMyGames = !isInMyGames;
-    if (newIsInMyGames) {
-      addGameToMyGamesInStorage(game);
-      notifications.show({
-        title: "Game Added",
-        message: `${game.name} has been added to My Games! 🎉`,
-        color: "green",
-      });
-    } else {
-      removeGameFromMyGamesInStorage(game.id);
-      notifications.show({
-        title: "Game Removed",
-        message: `${game.name} has been removed from My Games. 👋`,
-        color: "red",
-      });
+  const handleAddGame = () => {
+    addGameToMyGamesInStorage(game);
+    setIsInMyGames(true);
+    notifications.show({
+      title: "Game Added",
+      message: `${game.name} has been added to My Games! 🎉`,
+      color: "green",
+    });
+  };
+
+  const openRemoveConfirmModal = () => {
+    setModalOpened(true);
+  };
+
+  const confirmRemoveGame = () => {
+    removeGameFromMyGamesInStorage(game.id);
+    setIsInMyGames(false);
+    setModalOpened(false);
+    notifications.show({
+      title: "Game Removed",
+      message: `${game.name} has been removed from My Games. 👋`,
+      color: "red",
+    });
+    if (typeof onGameRemoved === "function") {
+      onGameRemoved(game.id);
     }
-    setIsInMyGames(newIsInMyGames);
   };
 
   // Unified GameActions UI (no pageType distinction)
   return (
-    <Stack gap="xs" align="center" onClickCapture={handleStackClick}>
-      {/* My Games Add/Remove Button */}
-      <Tooltip
-        label={isInMyGames ? "Remove from My Games" : "Add to My Games"}
-        withArrow
-        position="top"
+    <>
+      <Modal
+        opened={modalOpened}
+        onClose={() => setModalOpened(false)}
+        title="Confirm Removal"
+        centered
       >
-        <ActionIcon
-          onClick={
-            isInMyGames && typeof onOpenRemoveModal === "function"
-              ? () => onOpenRemoveModal(game.id)
-              : handleToggleMyGames
-          }
-          variant={isInMyGames ? "filled" : "outline"}
-          color={isInMyGames ? "red" : "blue"}
-          size="lg"
-        >
-          {isInMyGames ? (
-            <IconBookmarkFilled size={20} />
-          ) : (
-            <IconBookmarkPlus size={20} />
-          )}
-        </ActionIcon>
-      </Tooltip>
+        <Text size="sm">
+          Are you sure you want to remove {game?.name || "this game"} from your
+          list? This action cannot be undone.
+        </Text>
+        <Group mt="md">
+          <Button variant="outline" onClick={() => setModalOpened(false)}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={confirmRemoveGame}>
+            Remove Game
+          </Button>
+        </Group>
+      </Modal>
 
-      {/* Played/Unplayed Toggle Button */}
-      <Tooltip
-        label={isPlayed ? "Mark as Unplayed" : "Mark as Played"}
-        withArrow
-        position="top"
-      >
-        <ActionIcon
-          onClick={handleTogglePlayed}
-          variant={isPlayed ? "filled" : "outline"}
-          color="blue"
-          size="lg"
-          aria-label={isPlayed ? "Mark as Unplayed" : "Mark as Played"}
+      <Stack gap="xs" align="center" onClickCapture={handleStackClick}>
+        {/* My Games Add/Remove Button */}
+        <Tooltip
+          label={isInMyGames ? "Remove from My Games" : "Add to My Games"}
+          withArrow
+          position="top"
         >
-          <IconDeviceGamepad size={20} />
-        </ActionIcon>
-      </Tooltip>
-    </Stack>
+          <ActionIcon
+            onClick={
+              isInMyGames ? openRemoveConfirmModal : handleAddGame
+            }
+            variant={isInMyGames ? "filled" : "outline"}
+            color={isInMyGames ? "red" : "blue"}
+            size="lg"
+          >
+            {isInMyGames ? (
+              <IconBookmarkFilled size={20} />
+            ) : (
+              <IconBookmarkPlus size={20} />
+            )}
+          </ActionIcon>
+        </Tooltip>
+
+        {/* Played/Unplayed Toggle Button */}
+        <Tooltip
+          label={isPlayed ? "Mark as Unplayed" : "Mark as Played"}
+          withArrow
+          position="top"
+        >
+          <ActionIcon
+            onClick={handleTogglePlayed}
+            variant={isPlayed ? "filled" : "outline"}
+            color="blue"
+            size="lg"
+            aria-label={isPlayed ? "Mark as Unplayed" : "Mark as Played"}
+          >
+            <IconDeviceGamepad size={20} />
+          </ActionIcon>
+        </Tooltip>
+      </Stack>
+    </>
   );
 }
 

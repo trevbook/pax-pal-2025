@@ -15,7 +15,6 @@ import {
   Divider,
   List,
   Button,
-  Modal,
   Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
@@ -69,7 +68,6 @@ function GameDetailsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isInMyGames, setIsInMyGames] = useState(false);
-  const [modalOpened, setModalOpened] = useState(false);
   const [playedGames, setPlayedGames] = useState({}); // New state for played games
 
   useEffect(() => {
@@ -92,7 +90,6 @@ function GameDetailsPage() {
       setError(null);
       setGame(null);
       setIsInMyGames(false);
-      setModalOpened(false);
       try {
         const data = await fetchGameDetails(id);
         console.log("Game data:", data);
@@ -113,33 +110,13 @@ function GameDetailsPage() {
     loadGameData();
   }, [id]);
 
-  const handleToggleMyGames = () => {
-    if (!game || !game.id) return;
-
-    if (isInMyGames) {
-      setModalOpened(true);
-    } else {
-      addGameToMyGames(game);
-      setIsInMyGames(true);
-      notifications.show({
-        title: "Game Added",
-        message: `${game.name} has been added to My Games! 🎉`,
-        color: "green",
-      });
+  const handleGameRemovedFromActionsDetails = (removedGameId) => {
+    // This function is called by GameActions after a game is removed.
+    // We only need to update the isInMyGames state for this page.
+    if (game && game.id === removedGameId) {
+      setIsInMyGames(false);
     }
-  };
-
-  const confirmRemoveGame = () => {
-    if (!game || !game.id) return;
-    const gameName = game.name;
-    removeGameFromMyGames(game.id);
-    setIsInMyGames(false);
-    setModalOpened(false);
-    notifications.show({
-      title: "Game Removed",
-      message: `${gameName} has been removed from My Games. 👋`,
-      color: "red",
-    });
+    // Notification is handled by GameActions.
   };
 
   const handleTogglePlayedDetails = () => {
@@ -171,26 +148,6 @@ function GameDetailsPage() {
 
   return (
     <Container pb="xl">
-      <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title="Confirm Removal"
-        centered
-      >
-        <Text size="sm">
-          Are you sure you want to remove {game?.name || "this game"} from your
-          list?
-        </Text>
-        <Group mt="md">
-          <Button variant="outline" onClick={() => setModalOpened(false)}>
-            Cancel
-          </Button>
-          <Button color="red" onClick={confirmRemoveGame}>
-            Remove Game
-          </Button>
-        </Group>
-      </Modal>
-
       {loading && (
         <Center mt="xl">
           <Loader />
@@ -232,6 +189,7 @@ function GameDetailsPage() {
                 game={game}
                 initialIsPlayed={!!playedGames[game.id]}
                 initialIsInMyGames={isInMyGames}
+                onGameRemoved={handleGameRemovedFromActionsDetails}
               />
             )}
           </Group>

@@ -17,7 +17,6 @@ import {
 import { useNavigate } from "react-router";
 import { Link } from "react-router";
 import { notifications } from "@mantine/notifications";
-import { IconTrash } from "@tabler/icons-react"; // Assuming @tabler/icons-react is installed
 import GameActions from "../components/GameActions"; // Import the new component
 
 // Helper function to get games from localStorage
@@ -56,8 +55,7 @@ function MyGamesPage() {
   const [myGames, setMyGames] = useState([]);
   const [playedGames, setPlayedGames] = useState({});
   const navigate = useNavigate();
-  const [modalOpened, setModalOpened] = useState(false);
-  const [gameToRemove, setGameToRemove] = useState(null);
+  const [clearAllModalOpened, setClearAllModalOpened] = useState(false); // State for the new modal
 
   useEffect(() => {
     setMyGames(getMyGames());
@@ -65,41 +63,36 @@ function MyGamesPage() {
   }, []);
 
   const handleClearGames = () => {
+    // Open the confirmation modal instead of clearing directly
+    setClearAllModalOpened(true);
+  };
+
+  const executeClearAllGames = () => {
     localStorage.removeItem("myGames");
     localStorage.removeItem("playedGames"); // Clear played games as well
     setMyGames([]);
     setPlayedGames({}); // Update state to reflect cleared games
     notifications.show({
-      title: "Storage Cleared",
-      message: "All your saved games and played statuses have been cleared.",
+      title: "All Games Cleared",
+      message: "All your saved games and played statuses have been cleared from storage.",
       color: "orange",
     });
+    setClearAllModalOpened(false); // Close the modal
   };
 
-  const openConfirmationModal = (gameId) => {
-    setGameToRemove(gameId);
-    setModalOpened(true);
-  };
+  const handleGameRemovedFromActions = (removedGameId) => {
+    // This function will be called by GameActions after a game is removed.
+    // We need to update the myGames state and potentially playedGames state.
+    const updatedGames = getMyGames(); // Re-fetch from localStorage as GameActions modified it
+    setMyGames(updatedGames);
 
-  const confirmRemoveGame = () => {
-    if (gameToRemove) {
-      const updatedGames = removeGameFromMyGames(gameToRemove);
-      setMyGames(updatedGames);
-      // Also remove from played games if it exists there
-      const currentPlayed = getPlayedGamesStatus();
-      if (currentPlayed[gameToRemove]) {
-        delete currentPlayed[gameToRemove];
-        localStorage.setItem("playedGames", JSON.stringify(currentPlayed));
-        setPlayedGames(currentPlayed);
-      }
+    const currentPlayed = getPlayedGamesStatus();
+    if (currentPlayed[removedGameId]) {
+      delete currentPlayed[removedGameId];
+      localStorage.setItem("playedGames", JSON.stringify(currentPlayed));
+      setPlayedGames(currentPlayed);
     }
-    setModalOpened(false);
-    setGameToRemove(null);
-    notifications.show({
-      title: "Game Removed",
-      message: "The game has been removed from your list.",
-      color: "red",
-    });
+    // Notification is handled by GameActions, so no need to show one here.
   };
 
   const handleTogglePlayed = (gameId, gameName) => {
@@ -131,21 +124,26 @@ function MyGamesPage() {
         My Games
       </Title>
 
+      {/* Modal for confirming clearing all games */}
       <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title="Confirm Removal"
+        opened={clearAllModalOpened}
+        onClose={() => setClearAllModalOpened(false)}
+        title="Confirm Clear All Games"
         centered
       >
         <Text size="sm">
-          Are you sure you want to remove this game from your list?
+          Are you sure you want to remove ALL games from your list? This action
+          cannot be undone.
         </Text>
         <Group mt="md">
-          <Button variant="outline" onClick={() => setModalOpened(false)}>
+          <Button
+            variant="outline"
+            onClick={() => setClearAllModalOpened(false)}
+          >
             Cancel
           </Button>
-          <Button color="red" onClick={confirmRemoveGame}>
-            Remove Game
+          <Button color="red" onClick={executeClearAllGames}>
+            Clear All Games
           </Button>
         </Group>
       </Modal>
@@ -225,8 +223,7 @@ function MyGamesPage() {
                     game={game}
                     initialIsPlayed={!!playedGames[game.id]}
                     initialIsInMyGames={true}
-                    onOpenRemoveModal={openConfirmationModal}
-                    pageType="myGames"
+                    onGameRemoved={handleGameRemovedFromActions}
                   />
                 </div>
               </Group>
@@ -235,7 +232,12 @@ function MyGamesPage() {
         </SimpleGrid>
       )}
       {myGames.length > 0 && (
-        <Button color="red" mt="xl" onClick={handleClearGames} fullWidth>
+        <Button
+          color="red"
+          mt="xl"
+          onClick={handleClearGames} // This will now open the modal
+          fullWidth
+        >
           Clear All My Games
         </Button>
       )}
