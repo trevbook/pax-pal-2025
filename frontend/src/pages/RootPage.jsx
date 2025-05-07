@@ -14,6 +14,11 @@ const pageLinks = [
     path: "/all-games",
   },
   {
+    title: "My Games",
+    description: "View and manage your saved games.",
+    path: "/my-games",
+  },
+  {
     title: "Info",
     description: "Learn more about this application.",
     path: "/info",

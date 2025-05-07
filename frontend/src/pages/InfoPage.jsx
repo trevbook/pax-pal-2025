@@ -8,16 +8,19 @@ function InfoPage() {
         About Pax Pal
       </Title>
       <Text size="md" lh="lg">
-        Pax Pal is your ultimate companion for discovering new and exciting
-        games. Our application leverages a powerful hybrid search system,
-        combining traditional full-text search (BM25) with cutting-edge semantic
-        vector search (ANN Cosine) to provide you with highly relevant game
-        recommendations. Whether you're looking for a specific title or just
-        browsing for something new to play, Pax Pal helps you navigate a
-        comprehensive database of games, complete with metadata and media. The
-        backend is powered by FastAPI and SQLite with vector capabilities, while
-        the frontend is a responsive React application built with Vite and
-        Mantine.
+        I built PAX Pal 2025 to help PAX East attendees find cool games on the
+        show floor!
+        <br />
+        The official{" "}
+        <a
+          href="https://east.paxsite.com/en-us/expo-hall/expo-hall-demos.html"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Expo Hall Demos page
+        </a>{" "}
+        is a great list of games, but it's a little hard to search properly{" "}
+        <em>and</em> doesn't have a whole lot of information about each game.
       </Text>
     </Container>
   );
