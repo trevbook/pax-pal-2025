@@ -113,7 +113,9 @@ def hybrid_search(
             else:
                 for game_id, dist in raw_semantic_scores.items():
                     # Normalize so higher score is better
-                    semantic_results[game_id] = (max_dist - dist) / (max_dist - min_dist)
+                    semantic_results[game_id] = (max_dist - dist) / (
+                        max_dist - min_dist
+                    )
 
     except sqlite3.Error as e:
         print(f"Error during semantic search: {e}")

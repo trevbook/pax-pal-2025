@@ -19,4 +19,31 @@ export async function fetchGameDetails(gameId) {
   return await response.json(); // Parse the JSON response body
 }
 
-// Add other API functions here as needed 
+// Add other API functions here as needed
+export async function searchGames(query, semanticWeight, limit) {
+  if (!query) {
+    throw new Error("Search query is required");
+  }
+
+  const params = new URLSearchParams();
+  params.append("q", query);
+  if (semanticWeight !== undefined) {
+    params.append("semantic_weight", semanticWeight);
+  }
+  if (limit !== undefined) {
+    params.append("limit", limit);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage =
+      errorData.detail ||
+      `Error searching games: ${response.status} ${response.statusText}`;
+    console.error("API Error:", errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+} 
