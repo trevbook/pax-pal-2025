@@ -11,6 +11,7 @@ import '@mantine/notifications/styles.css';
 // Import custom components
 import AppHeader from "./components/AppHeader";
 import AppNavbar from "./components/AppNavbar";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Import page components
 import RootPage from "./pages/RootPage";
@@ -52,6 +53,7 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <MantineProvider>
         <Notifications />
         <AppContent />

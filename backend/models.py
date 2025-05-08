@@ -11,7 +11,7 @@ This module contains various Pydantic models used throughout the API.
 from typing import Optional, List
 
 # Third-party imports
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ===============
 # DEFINING MODELS
@@ -83,6 +83,14 @@ class Game(BaseModel):
     similar_games: List[str] = Field(
         default_factory=list, description="List of recommended similar games' IDs'"
     )
+
+    @field_validator("media", mode="after")
+    @classmethod
+    def sort_media_items(cls, v: List[MediaItem]) -> List[MediaItem]:
+        """Sorts media items so that videos appear before images."""
+        if v:
+            v.sort(key=lambda item: item.type != "video")
+        return v
 
 
 class GameTableRow(BaseModel):

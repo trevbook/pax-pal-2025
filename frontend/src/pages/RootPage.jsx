@@ -35,7 +35,15 @@ function RootPage() {
       <Container p="lg" style={{ textAlign: 'center' }}>
         <Title order={1}>PAX Pal 2025</Title>
         <Text size="sm" c="dimmed" mt="xs">
-          an app made by trevbook
+          an app made by{" "}
+          <a
+            href="https://x.com/trevbook"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "inherit", textDecoration: "underline" }}
+          >
+            trevbook
+          </a>
         </Text>
       </Container>
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" p="lg">

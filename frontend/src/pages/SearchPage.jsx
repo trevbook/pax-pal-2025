@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import {
   Container,
-  TextInput,
+  Textarea,
   Button,
-  Center,
   Stack,
   Text,
   Loader,
@@ -24,7 +23,9 @@ function SearchPage() {
   const navigate = useNavigate();
 
   const handleSearch = async (event) => {
-    event.preventDefault(); // Prevent default form submission
+    if (event && typeof event.preventDefault === "function") {
+      event.preventDefault(); // Prevent default form submission or newline character
+    }
     if (!query.trim()) {
       setError("Please enter a search term.");
       setResults(null);
@@ -45,54 +46,60 @@ function SearchPage() {
     }
   };
 
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault(); // Prevent newline in textarea
+      handleSearch(event); // Pass the event object
+    }
+  };
+
   return (
-    <Container style={{ paddingTop: "2rem", paddingBottom: "2rem" }}>
-      <Center>
-        <Stack
-          align="center"
-          gap="md"
-          style={{ width: "100%", maxWidth: "600px" }}
-        >
-          <Text size="xl" fw={700}>
-            Search Games
-          </Text>
-          <form onSubmit={handleSearch} style={{ width: "100%" }}>
-            <Stack gap="sm">
-              <TextInput
-                placeholder="Enter search term (e.g., 'space shooter')"
-                value={query}
-                onChange={(event) => setQuery(event.currentTarget.value)}
-                size="md"
-                disabled={loading}
-              />
-              <Button type="submit" loading={loading} size="md" fullWidth>
-                Search
-              </Button>
-            </Stack>
-          </form>
+    <Container>
+      <Stack
+        gap="md"
+        style={{ width: "100%", maxWidth: "800px", margin: "0 auto" }}
+      >
+        <Text size="xl" fw={700} ta="left">
+          Search Games
+        </Text>
+        <form onSubmit={handleSearch} style={{ width: "100%" }}>
+          <Stack gap="sm">
+            <Textarea
+              placeholder="Enter search term (e.g., 'space shooter', or 'cute frog')"
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              onKeyDown={handleKeyDown}
+              size="md"
+              disabled={loading}
+              autosize
+              minRows={1}
+            />
+            <Button
+              type="submit"
+              loading={loading}
+              size="md"
+              fullWidth
+              color="dark"
+            >
+              Search
+            </Button>
+          </Stack>
+        </form>
 
-          {loading && (
-            <Center mt="xl">
-              <Loader />
-            </Center>
-          )}
+        {error && (
+          <Alert color="red" mt="xl" title="Error" style={{ width: "100%" }}>
+            {error}
+          </Alert>
+        )}
 
-          {error && (
-            <Alert color="red" mt="xl" title="Error">
-              {error}
-            </Alert>
-          )}
-
-          {results && !loading && !error && (
-            <Stack mt="xl" gap="md" style={{ width: "100%" }}>
-              <Text fw={500}>Search Results ({results.length}):</Text>
-              {results.map((game) => (
-                <SearchResultCard key={game.id} game={game} />
-              ))}
-            </Stack>
-          )}
-        </Stack>
-      </Center>
+        {results && !loading && !error && (
+          <Stack mt="xl" gap="md" style={{ width: "100%" }}>
+            {results.map((game) => (
+              <SearchResultCard key={game.id} game={game} />
+            ))}
+          </Stack>
+        )}
+      </Stack>
     </Container>
   );
 }

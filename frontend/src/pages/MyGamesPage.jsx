@@ -32,15 +32,20 @@ function MyGamesPage() {
   const [totalGamesInDb, setTotalGamesInDb] = useState(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [playedGamesCount, setPlayedGamesCount] = useState(0);
+  const [allGamesFromStorage, setAllGamesFromStorage] = useState([]);
+  const [favoriteGamesCount, setFavoriteGamesCount] = useState(0);
+  const [activeFilter, setActiveFilter] = useState(null); // 'favorites', 'played', or null
 
-  const loadDisplayedGames = useCallback(() => {
+  const loadAndProcessGames = useCallback(() => {
     const allGames = getCombinedDisplayedGames();
-    setDisplayedGames(allGames);
+    setAllGamesFromStorage(allGames);
+    setPlayedGamesCount(getPlayedGameIds().length);
+    setFavoriteGamesCount(getFavoriteGameIds().length);
+    // Initial display will be set by the filter useEffect
   }, []);
 
   useEffect(() => {
-    setPlayedGamesCount(getPlayedGameIds().length);
-    loadDisplayedGames();
+    loadAndProcessGames();
 
     // Fetch total games count
     setIsLoadingStats(true);
@@ -60,7 +65,19 @@ function MyGamesPage() {
       .finally(() => {
         setIsLoadingStats(false);
       });
-  }, [loadDisplayedGames]);
+  }, [loadAndProcessGames]);
+
+  useEffect(() => {
+    if (!activeFilter) {
+      setDisplayedGames(allGamesFromStorage);
+    } else if (activeFilter === 'favorites') {
+      const favoriteIds = getFavoriteGameIds();
+      setDisplayedGames(allGamesFromStorage.filter(game => favoriteIds.includes(game.id)));
+    } else if (activeFilter === 'played') {
+      const playedIds = getPlayedGameIds();
+      setDisplayedGames(allGamesFromStorage.filter(game => playedIds.includes(game.id)));
+    }
+  }, [allGamesFromStorage, activeFilter]);
 
   const handleClearGames = () => {
     setClearAllModalOpened(true);
@@ -68,8 +85,7 @@ function MyGamesPage() {
 
   const executeClearAllGames = () => {
     clearAllGameData();
-    loadDisplayedGames();
-    setPlayedGamesCount(getPlayedGameIds().length);
+    loadAndProcessGames(); // Reload and reprocess games
     notifications.show({
       title: "All Game Data Cleared",
       message: "All your favorited and played game data has been cleared. 🧹",
@@ -79,11 +95,8 @@ function MyGamesPage() {
   };
 
   const handleGameInteractionUpdate = useCallback(() => {
-    loadDisplayedGames();
-    const n_playedGames = getPlayedGameIds().length;
-    console.log("Number of played games:", n_playedGames);
-    setPlayedGamesCount(n_playedGames);
-  }, [loadDisplayedGames]);
+    loadAndProcessGames(); // This will update counts and allGamesFromStorage, triggering the filter useEffect
+  }, [loadAndProcessGames]);
 
   return (
     <Container>
@@ -107,6 +120,35 @@ function MyGamesPage() {
           <Text>Could not load game statistics.</Text>
         )}
       </Box>
+
+      {/* Filter Buttons Section */}
+      {allGamesFromStorage.length > 0 && (
+        <SimpleGrid cols={2} spacing="md" mt="md" mb="lg">
+          <Button
+            variant={activeFilter === 'favorites' ? 'filled' : 'outline'}
+            onClick={() => setActiveFilter(activeFilter === 'favorites' ? null : 'favorites')}
+            disabled={favoriteGamesCount === 0 && activeFilter !== 'favorites'}
+            size="xs"
+            h={30}
+            px="xs"
+            color={activeFilter === 'favorites' ? "red" : "pink"}
+            style={{ whiteSpace: 'normal', textAlign: 'center' }}
+          >
+            Show Favorites ({favoriteGamesCount})
+          </Button>
+          <Button
+            variant={activeFilter === 'played' ? 'filled' : 'outline'}
+            onClick={() => setActiveFilter(activeFilter === 'played' ? null : 'played')}
+            disabled={playedGamesCount === 0 && activeFilter !== 'played'}
+            size="xs"
+            h={30}
+            px="xs"
+            style={{ whiteSpace: 'normal', textAlign: 'center' }}
+          >
+            Show Played ({playedGamesCount})
+          </Button>
+        </SimpleGrid>
+      )}
 
       <Modal
         opened={clearAllModalOpened}

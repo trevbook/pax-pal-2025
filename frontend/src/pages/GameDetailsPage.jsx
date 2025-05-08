@@ -148,11 +148,24 @@ function GameDetailsPage() {
           <Divider my="md" />
 
           {game.booth_number && (
-            <Stack gap={4} style={{ minWidth: 0, marginTop: 'var(--mantine-spacing-md)', marginBottom: 'var(--mantine-spacing-lg)' }}>
+            <Stack
+              gap={4}
+              style={{
+                minWidth: 0,
+                marginTop: "var(--mantine-spacing-md)",
+                marginBottom: "var(--mantine-spacing-lg)",
+              }}
+            >
               <Text fw={600} mb={2}>
                 Expo Hall Location
               </Text>
               <Text size="sm">
+                {game.exhibitor && (
+                  <span style={{ textTransform: "uppercase" }}>
+                    {game.exhibitor}
+                  </span>
+                )}
+                {game.exhibitor && <br />}
                 Booth {game.booth_number} (
                 <Link
                   to={`/map/${game.booth_number}`}
