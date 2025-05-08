@@ -147,6 +147,24 @@ function GameDetailsPage() {
 
           <Divider my="md" />
 
+          {game.booth_number && (
+            <Stack gap={4} style={{ minWidth: 0, marginTop: 'var(--mantine-spacing-md)', marginBottom: 'var(--mantine-spacing-lg)' }}>
+              <Text fw={600} mb={2}>
+                Expo Hall Location
+              </Text>
+              <Text size="sm">
+                Booth {game.booth_number} (
+                <Link
+                  to={`/map/${game.booth_number}`}
+                  style={{ textDecoration: "underline", color: "inherit" }}
+                >
+                  view on map
+                </Link>
+                )
+              </Text>
+            </Stack>
+          )}
+
           <Stack gap="lg">
             {game.description &&
               typeof game.description === "string" &&
@@ -277,22 +295,6 @@ function GameDetailsPage() {
                     </List.Item>
                   ))}
                 </List>
-              </Stack>
-            )}
-
-            {game.booth_number && (
-              <Stack gap={4} style={{ minWidth: 0 }}>
-                <Text fw={600} mb={2}>
-                  Booth Location
-                </Text>
-                <Text size="sm">
-                  <Link
-                    to={`/map/${game.booth_number}`}
-                    style={{ textDecoration: "underline", color: "inherit" }}
-                  >
-                    View Booth {game.booth_number} on Map
-                  </Link>
-                </Text>
               </Stack>
             )}
           </Stack>

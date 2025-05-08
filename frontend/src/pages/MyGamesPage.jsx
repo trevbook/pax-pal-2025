@@ -11,6 +11,7 @@ import {
   Group,
   Anchor,
   Stack,
+  Box,
 } from "@mantine/core";
 import { useNavigate } from "react-router";
 import { Link } from "react-router";
@@ -22,11 +23,15 @@ import {
   getPlayedGameIds,
   clearAllGameData,
 } from "../utils/localStorageUtils";
+import { fetchTotalGamesCount } from "../api";
 
 function MyGamesPage() {
   const [displayedGames, setDisplayedGames] = useState([]);
   const navigate = useNavigate();
   const [clearAllModalOpened, setClearAllModalOpened] = useState(false);
+  const [totalGamesInDb, setTotalGamesInDb] = useState(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [playedGamesCount, setPlayedGamesCount] = useState(0);
 
   const loadDisplayedGames = useCallback(() => {
     const allGames = getCombinedDisplayedGames();
@@ -34,7 +39,27 @@ function MyGamesPage() {
   }, []);
 
   useEffect(() => {
+    setPlayedGamesCount(getPlayedGameIds().length);
     loadDisplayedGames();
+
+    // Fetch total games count
+    setIsLoadingStats(true);
+    fetchTotalGamesCount()
+      .then((count) => {
+        setTotalGamesInDb(count);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch total games count:", error);
+        notifications.show({
+          title: "Error",
+          message: "Could not load total game statistics.",
+          color: "red",
+        });
+        setTotalGamesInDb(0); // Set to 0 or handle error display appropriately
+      })
+      .finally(() => {
+        setIsLoadingStats(false);
+      });
   }, [loadDisplayedGames]);
 
   const handleClearGames = () => {
@@ -44,6 +69,7 @@ function MyGamesPage() {
   const executeClearAllGames = () => {
     clearAllGameData();
     loadDisplayedGames();
+    setPlayedGamesCount(getPlayedGameIds().length);
     notifications.show({
       title: "All Game Data Cleared",
       message: "All your favorited and played game data has been cleared. 🧹",
@@ -54,6 +80,9 @@ function MyGamesPage() {
 
   const handleGameInteractionUpdate = useCallback(() => {
     loadDisplayedGames();
+    const n_playedGames = getPlayedGameIds().length;
+    console.log("Number of played games:", n_playedGames);
+    setPlayedGamesCount(n_playedGames);
   }, [loadDisplayedGames]);
 
   return (
@@ -61,6 +90,23 @@ function MyGamesPage() {
       <Title order={2} mb="lg">
         My Games
       </Title>
+
+      {/* Statistics Section */}
+      <Box mb="lg" p="md" style={{ border: '1px solid var(--mantine-color-gray-3)', borderRadius: 'var(--mantine-radius-md)' }}>
+        <Title order={4} mb="xs">Game Stats</Title>
+        {isLoadingStats ? (
+          <Text>Loading stats...</Text>
+        ) : totalGamesInDb !== null ? (
+          <Text>
+            Games Played: {playedGamesCount} / {totalGamesInDb}
+            {totalGamesInDb > 0 && 
+              ` (${((playedGamesCount / totalGamesInDb) * 100).toFixed(1)}%)`
+            }
+          </Text>
+        ) : (
+          <Text>Could not load game statistics.</Text>
+        )}
+      </Box>
 
       <Modal
         opened={clearAllModalOpened}
@@ -168,6 +214,7 @@ function MyGamesPage() {
                       initialIsPlayed={initialIsPlayed}
                       initialIsFavorited={initialIsFavorited}
                       onGameUnfavorited={handleGameInteractionUpdate}
+                      onGamePlayed={handleGameInteractionUpdate}
                       onGameUnplayed={handleGameInteractionUpdate}
                     />
                   </div>

@@ -91,3 +91,18 @@ export async function fetchGamesByIds(ids) {
 
   return await response.json();
 }
+
+export async function fetchTotalGamesCount() {
+  const response = await fetch(`${API_BASE_URL}/games/count`);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage =
+      errorData.detail ||
+      `Error fetching total games count: ${response.status} ${response.statusText}`;
+    console.error("API Error:", errorMessage);
+    throw new Error(errorMessage);
+  }
+  const data = await response.json();
+  return data.total_games; // Assuming the endpoint returns { "total_games": count }
+}

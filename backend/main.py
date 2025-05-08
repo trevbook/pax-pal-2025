@@ -180,6 +180,48 @@ def search_games(
 
 
 @app.get(
+    "/api/games/count",
+    response_model=dict, # Using dict for a simple {"total_games": count} response
+    tags=["Games"],
+    summary="Get the total number of games",
+    description="Retrieves the total count of games in the database.",
+    responses={
+        200: {"description": "Successfully retrieved game count"},
+        500: {"description": "Internal server error"},
+    },
+)
+def get_total_games_count(db: sqlite3.Connection = Depends(get_db)) -> dict:
+    """
+    Counts the total number of games in the 'games' table.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) AS total_count FROM games") # Alias COUNT(*) as total_count
+        row = cursor.fetchone()
+        if row:
+            count = row['total_count'] # Access by the alias
+        else:
+            # This case should ideally not happen with COUNT(*), but good to be safe
+            count = 0 
+        return {"total_games": count}
+    except sqlite3.Error as e:
+        print(f"Database error while counting games: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error while counting games.",
+        )
+    except Exception as e:
+        import traceback # Import traceback for detailed stack trace
+        print(f"Unexpected error while counting games. Type: {type(e)}, Repr: {repr(e)}, Str: {str(e)}")
+        print("Traceback:")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while counting games.",
+        )
+
+
+@app.get(
     "/api/games/all",
     response_model=List[GameTableRow],
     tags=["Games"],

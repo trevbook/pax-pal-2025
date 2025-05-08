@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
-import { Box, Title, Center, Loader, Paper, Text, Image, Button } from "@mantine/core";
+import { Box, Title, Center, Loader, Text, Image, Button } from "@mantine/core";
 import { IconArrowsMaximize, IconArrowsMinimize } from "@tabler/icons-react";
 
 function BoothMapHighlightPage() {
@@ -105,12 +105,7 @@ function BoothMapHighlightPage() {
   }
 
   return (
-    <Paper
-      shadow="md"
-      p={{ base: 'sm', sm: 'lg' }}
-      m={{ base: 'xs', sm: 'md' }}
-      withBorder
-    >
+    <>
       <Title order={2} ta="center" mb="xl">
         Map: Booth {currentBoothIdString}
       </Title>
@@ -153,7 +148,7 @@ function BoothMapHighlightPage() {
                 cy={(boothCoords[1] + boothCoords[3]) / 2}
                 r={60}
                 style={{
-                  fill: "rgba(255, 255, 0, 0.5)",
+                  fill: "rgba(255, 0, 255, 0.6)",
                   stroke: "black",
                   strokeWidth: "2px",
                 }}
@@ -191,7 +186,7 @@ function BoothMapHighlightPage() {
           )}
         </Box>
       </Center>
-    </Paper>
+    </>
   );
 }
 

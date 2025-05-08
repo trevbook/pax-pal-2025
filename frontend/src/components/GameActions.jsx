@@ -31,6 +31,7 @@ function GameActions({
   onGameRemoved,
   onGameUnfavorited,
   onGameUnplayed,
+  onGamePlayed, // Add this prop for completeness, as used in MyGamesPage
 }) {
   const [isPlayed, setIsPlayed] = useState(initialIsPlayed);
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
@@ -49,6 +50,7 @@ function GameActions({
     return null;
   }
 
+  // Prevent click events from bubbling up to parent elements (e.g., card navigation)
   const handleStackClick = (event) => {
     // event.stopPropagation();
   };
@@ -82,6 +84,9 @@ function GameActions({
         message: `"${game.name}" marked as played! ✅`,
         color: "green",
       });
+      if (typeof onGamePlayed === "function") {
+        onGamePlayed(game.id);
+      }
     }
   };
 
