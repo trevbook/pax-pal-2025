@@ -13,6 +13,7 @@ import {
   Stack,
   Box,
 } from "@mantine/core";
+import { Carousel } from '@mantine/carousel';
 import { useNavigate } from "react-router";
 import { Link } from "react-router";
 import { notifications } from "@mantine/notifications";
@@ -23,7 +24,8 @@ import {
   getPlayedGameIds,
   clearAllGameData,
 } from "../utils/localStorageUtils";
-import { fetchTotalGamesCount } from "../api";
+import { fetchTotalGamesCount, fetchRecommendations, fetchGamesByIds } from "../api";
+import SearchResultCard from "../components/SearchResultCard";
 
 function MyGamesPage() {
   const [displayedGames, setDisplayedGames] = useState([]);
@@ -35,6 +37,11 @@ function MyGamesPage() {
   const [allGamesFromStorage, setAllGamesFromStorage] = useState([]);
   const [favoriteGamesCount, setFavoriteGamesCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState(null); // 'favorites', 'played', or null
+
+  // State for recommendations
+  const [recommendedGames, setRecommendedGames] = useState([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [recommendationsError, setRecommendationsError] = useState(null);
 
   const loadAndProcessGames = useCallback(() => {
     const allGames = getCombinedDisplayedGames();
@@ -66,6 +73,51 @@ function MyGamesPage() {
         setIsLoadingStats(false);
       });
   }, [loadAndProcessGames]);
+
+  // Effect to fetch recommendations when played/all games change
+  useEffect(() => {
+    const fetchAndSetRecommendations = async () => {
+      const playedIds = getPlayedGameIds();
+      const favoritedIds = getFavoriteGameIds();
+      const allInteractedIds = Array.from(new Set([...playedIds, ...favoritedIds]));
+
+      if (allInteractedIds.length === 0) {
+        setRecommendedGames([]);
+        return;
+      }
+
+      setIsLoadingRecommendations(true);
+      setRecommendationsError(null);
+      try {
+        // Fetch recommended game IDs, telling the backend to exclude games from the input list (allInteractedIds)
+        // This means if a game is in `allInteractedIds`, it won't be in the output `recommendedGameIds`.
+        const recommendedGameIds = await fetchRecommendations(allInteractedIds, true, 10);
+        console.log("Recommended Game IDs:", recommendedGameIds);
+        
+        if (recommendedGameIds && recommendedGameIds.length > 0) {
+          // Filter out any IDs that are *already* in the user's broader collection (played or favorited)
+          // This is a client-side double-check, as the backend should ideally handle `exclude_played_games` correctly.
+          const uniqueNewRecommendedIds = recommendedGameIds.filter(id => !allInteractedIds.includes(id));
+          
+          if (uniqueNewRecommendedIds.length > 0) {
+            const gamesData = await fetchGamesByIds(uniqueNewRecommendedIds);
+            setRecommendedGames(gamesData.filter(game => game)); // Filter out any null/undefined games if API returns partial success
+          } else {
+            setRecommendedGames([]);
+          }
+        } else {
+          setRecommendedGames([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch recommendations:", error);
+        setRecommendationsError("Could not load recommendations. Please try again later.");
+        setRecommendedGames([]);
+      }
+      setIsLoadingRecommendations(false);
+    };
+
+    fetchAndSetRecommendations();
+  }, [allGamesFromStorage]); // Re-fetch when the base list of stored games changes
 
   useEffect(() => {
     if (!activeFilter) {
@@ -276,6 +328,38 @@ function MyGamesPage() {
         >
           Clear All My Games Data
         </Button>
+      )}
+
+      {/* Recommendations Section */}
+      {allGamesFromStorage.length > 0 && recommendedGames.length > 0 && (
+        <Box mt="xl" pt="xl" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+          <Title order={3} mb="lg">
+            Games You Might Like
+          </Title>
+          {isLoadingRecommendations && <Text>Loading recommendations...</Text>}
+          {recommendationsError && <Text color="red">{recommendationsError}</Text>}
+          {!isLoadingRecommendations && !recommendationsError && recommendedGames.length > 0 && (
+            <Carousel
+              slideSize={{ base: '100%', sm: '50%', md: '33.333333%' }}
+              slideGap={{ base: 0, sm: 'md' }}
+              loop
+              align="start"
+              withIndicators
+              slidesToScroll={1}
+            >
+              {recommendedGames.map((game) => (
+                <Carousel.Slide key={`rec-${game.id}`}>
+                  <Box p="xs">
+                    <SearchResultCard game={game} />
+                  </Box>
+                </Carousel.Slide>
+              ))}
+            </Carousel>
+          )}
+          {!isLoadingRecommendations && !recommendationsError && recommendedGames.length === 0 && allInteractedIds.length > 0 && (
+             <Text>No new recommendations based on your current games. Explore more!</Text>
+          )}
+        </Box>
       )}
     </Container>
   );

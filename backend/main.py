@@ -11,6 +11,7 @@ Defines API routes and application configuration.
 import json
 import sqlite3
 from typing import List, Optional
+from collections import Counter
 
 # Third-party imports
 from pydantic import BaseModel
@@ -360,6 +361,94 @@ def get_games_by_ids(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while retrieving games by IDs.",
+        )
+
+
+@app.post(
+    "/api/recommendations/from-played",
+    response_model=GameIdList,
+    tags=["Recommendations"],
+    summary="Get game recommendations based on a list of played games",
+    description="Aggregates 'similar_games' from a provided list of game IDs, sorts them by frequency, and optionally excludes the input games.",
+    responses={
+        200: {"description": "Successfully retrieved recommendations"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def get_recommendations_from_played(
+    played_games_payload: GameIdList,
+    exclude_played_games: Optional[bool] = Query(
+        True,
+        description="If true, excludes games from the input list from the recommendations.",
+    ),
+    db: sqlite3.Connection = Depends(get_db),
+) -> GameIdList:
+    """
+    Generates game recommendations based on a list of played games.
+
+    - Fetches 'similar_games' for each game in the input list.
+    - Counts the frequency of each similar game.
+    - Sorts the similar games by frequency in descending order.
+    - Optionally excludes the input games themselves from the recommendations.
+    """
+    if not played_games_payload.ids:
+        return GameIdList(ids=[])
+
+    input_game_ids_set = set(played_games_payload.ids)
+    all_similar_games_counter = Counter()
+
+    try:
+        placeholders = ",".join(["?"] * len(played_games_payload.ids))
+        query = f"SELECT id, similar_games FROM games WHERE id IN ({placeholders})"
+
+        cursor = db.cursor()
+        cursor.execute(query, played_games_payload.ids)
+        rows = cursor.fetchall()  # List of dicts due to row_factory
+
+        for row in rows:
+            game_id = row.get("id") # For logging/debugging if needed
+            similar_games_json = row.get("similar_games")
+            if similar_games_json:
+                try:
+                    similar_ids_for_this_game = json.loads(similar_games_json)
+                    if isinstance(similar_ids_for_this_game, list) and all(
+                        isinstance(gid, str) for gid in similar_ids_for_this_game
+                    ):
+                        all_similar_games_counter.update(similar_ids_for_this_game)
+                    elif similar_ids_for_this_game: # If not empty and not list of strings
+                        print(
+                            f"Warning: similar_games for game '{game_id}' was not a list of strings: {similar_games_json}"
+                        )
+                except json.JSONDecodeError:
+                    print(
+                        f"Warning: Could not parse similar_games JSON for game '{game_id}': {similar_games_json}"
+                    )
+                    continue
+
+        # Get game IDs sorted by frequency, most common first
+        sorted_similar_games_with_counts = all_similar_games_counter.most_common()
+        
+        recommended_ids_ordered = []
+        for game_id, _ in sorted_similar_games_with_counts:
+            if exclude_played_games and game_id in input_game_ids_set:
+                continue
+            recommended_ids_ordered.append(game_id)
+            
+        return GameIdList(ids=recommended_ids_ordered)
+
+    except sqlite3.Error as e:
+        print(f"Database error while fetching recommendations: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error retrieving recommendations.",
+        )
+    except Exception as e:
+        import traceback # For more detailed error logging
+        print(f"Unexpected error while fetching recommendations: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while generating recommendations.",
         )
 
 
