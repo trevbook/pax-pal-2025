@@ -112,8 +112,8 @@ function MyGamesPage() {
         ) : totalGamesInDb !== null ? (
           <Text>
             Games Played: {playedGamesCount} / {totalGamesInDb}
-            {totalGamesInDb > 0 && 
-              ` (${((playedGamesCount / totalGamesInDb) * 100).toFixed(1)}%)`
+            {totalGamesInDb > 0 &&
+              ` (${Math.ceil((playedGamesCount / totalGamesInDb) * 100)}%)`
             }
           </Text>
         ) : (
@@ -258,6 +258,7 @@ function MyGamesPage() {
                       onGameUnfavorited={handleGameInteractionUpdate}
                       onGamePlayed={handleGameInteractionUpdate}
                       onGameUnplayed={handleGameInteractionUpdate}
+                      onGameFavorited={handleGameInteractionUpdate}
                     />
                   </div>
                 </Group>

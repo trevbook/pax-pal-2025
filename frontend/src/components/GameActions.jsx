@@ -10,7 +10,6 @@ import {
   Text,
 } from "@mantine/core";
 import {
-  IconTrash,
   IconHeartPlus,
   IconHeartFilled,
   IconDeviceGamepad,
@@ -32,6 +31,7 @@ function GameActions({
   onGameUnfavorited,
   onGameUnplayed,
   onGamePlayed, // Add this prop for completeness, as used in MyGamesPage
+  onGameFavorited, // New handler for when a game is favorited
 }) {
   const [isPlayed, setIsPlayed] = useState(initialIsPlayed);
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
@@ -98,6 +98,9 @@ function GameActions({
       message: `${game.name} has been added to Favorites! ❤️`,
       color: "pink",
     });
+    if (typeof onGameFavorited === "function") {
+      onGameFavorited(game.id);
+    }
   };
 
   const openRemoveFavoriteConfirmModal = () => {
@@ -120,6 +123,7 @@ function GameActions({
 
   return (
     <>
+      {/* Remove Favorite Modal */}
       <Modal
         opened={removeFavoriteModalOpened}
         onClose={() => setRemoveFavoriteModalOpened(false)}
@@ -140,6 +144,7 @@ function GameActions({
         </Group>
       </Modal>
 
+      {/* Unplay Modal */}
       <Modal
         opened={unplayConfirmModalOpened}
         onClose={() => setUnplayConfirmModalOpened(false)}

@@ -175,3 +175,4 @@ cython_debug/
 experiments/data/*
 backend/database.sqlite
 .DS_Store
+frontend/info_pg_draft.md
