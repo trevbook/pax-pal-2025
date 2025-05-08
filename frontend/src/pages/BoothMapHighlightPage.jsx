@@ -64,6 +64,18 @@ function BoothMapHighlightPage() {
   const currentBoothIdString = String(boothId);
   const boothCoords = boothsData && boothsData[currentBoothIdString];
 
+  const imageStyles = {
+    display: "block",
+    opacity: imageDimensions.loaded ? 1 : 0.5,
+  };
+
+  if (isFullscreen) {
+    imageStyles.width = "100%";
+    imageStyles.height = "100%";
+  } else {
+    imageStyles.maxWidth = "100%";
+  }
+
   if (error) {
     return (
       <Center style={{ height: "100vh" }}>
@@ -108,11 +120,8 @@ function BoothMapHighlightPage() {
             src="/pax-map.jpg"
             alt={`PAX Map - Highlight for Booth ${currentBoothIdString}`}
             onLoad={handleImageLoad}
-            style={{
-              display: "block",
-              maxWidth: "100%",
-              opacity: imageDimensions.loaded ? 1 : 0.5,
-            }}
+            fit={isFullscreen ? "contain" : undefined}
+            style={imageStyles}
           />
           {!imageDimensions.loaded && (
             <Center

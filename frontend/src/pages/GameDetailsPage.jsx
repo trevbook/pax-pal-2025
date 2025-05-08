@@ -173,8 +173,8 @@ function GameDetailsPage() {
                   height={200}
                   emblaOptions={{
                     loop: true,
-                    align: 'center',
-                    dragFree: false
+                    align: "center",
+                    dragFree: false,
                   }}
                 >
                   {game.media.map((mediaItem, index) => (
@@ -214,9 +214,13 @@ function GameDetailsPage() {
                 {Array.isArray(game.genres_and_tags) &&
                 game.genres_and_tags.length > 0 ? (
                   game.genres_and_tags.map((genre) => (
-                    <Pill key={genre} size="sm" variant="light">
-                      {genre}
-                    </Pill>
+                    <Link
+                      to={`/all-games?genres=${encodeURIComponent(genre)}`}
+                      key={genre}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <Pill>{genre}</Pill>
+                    </Link>
                   ))
                 ) : (
                   <Text size="sm" c="dimmed">
@@ -233,9 +237,15 @@ function GameDetailsPage() {
               <Group gap={6} wrap="wrap">
                 {Array.isArray(game.platforms) && game.platforms.length > 0 ? (
                   game.platforms.map((platform) => (
-                    <Pill key={platform} size="sm" variant="light">
-                      {platform}
-                    </Pill>
+                    <Link
+                      to={`/all-games?platforms=${encodeURIComponent(
+                        platform
+                      )}`}
+                      key={platform}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <Pill>{platform}</Pill>
+                    </Link>
                   ))
                 ) : (
                   <Text size="sm" c="dimmed">
@@ -311,8 +321,8 @@ function GameDetailsPage() {
                     containScroll="trimSnaps"
                     emblaOptions={{
                       loop: true,
-                      align: 'center',
-                      dragFree: false
+                      align: "center",
+                      dragFree: false,
                     }}
                   >
                     {similarGames.map((simGame) => (
