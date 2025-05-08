@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, Text, SimpleGrid, Group, Title, Container } from "@mantine/core";
 import { useNavigate } from "react-router";
 
@@ -26,6 +26,10 @@ const pageLinks = [
 ];
 
 function RootPage() {
+  useEffect(() => {
+    document.title = "PAX Pal 2025";
+  }, []);
+
   const navigate = useNavigate();
 
   const filteredPageLinks = pageLinks.filter(link => link.title !== "Game Details");

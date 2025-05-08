@@ -49,6 +49,10 @@ function AllGamesPage() {
   );
 
   useEffect(() => {
+    document.title = "All Games - PAX Pal";
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);

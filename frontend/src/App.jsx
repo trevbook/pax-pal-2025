@@ -37,13 +37,13 @@ function AppContent() {
       {showHeader && <AppNavbar opened={opened} toggle={toggle} />}
       <AppShell.Main>
         <Routes>
-          <Route path="/" element={<RootPage />} />
-          <Route path="/game_details" element={<GameDetailsPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/info" element={<InfoPage />} />
-          <Route path="/all-games" element={<AllGamesPage />} />
-          <Route path="/my-games" element={<MyGamesPage />} />
-          <Route path="/map/:boothId" element={<BoothMapHighlightPage />} />
+          <Route path="/" element={<RootPage />} title="PAX Pal 2025 Home" />
+          <Route path="/game_details" element={<GameDetailsPage />} title="Game Details" />
+          <Route path="/search" element={<SearchPage />} title="Search Games" />
+          <Route path="/info" element={<InfoPage />} title="About PAX Pal" />
+          <Route path="/all-games" element={<AllGamesPage />} title="All Games" />
+          <Route path="/my-games" element={<MyGamesPage />} title="My Games" />
+          <Route path="/map/:boothId" element={<BoothMapHighlightPage />} title="Expo Hall Map" />
         </Routes>
       </AppShell.Main>
     </AppShell>

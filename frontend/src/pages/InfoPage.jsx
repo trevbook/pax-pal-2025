@@ -1,8 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Container, Title, Text, List, ThemeIcon } from "@mantine/core";
 import { IconCircleCheck } from "@tabler/icons-react";
 
 function InfoPage() {
+  useEffect(() => {
+    document.title = "About - PAX Pal";
+  }, []);
+
   return (
     <Container mt="lg">
       <Title order={1} mb="md">

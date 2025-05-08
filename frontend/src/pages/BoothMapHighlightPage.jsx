@@ -16,6 +16,14 @@ function BoothMapHighlightPage() {
   const mapContainerRef = useRef(null);
 
   useEffect(() => {
+    if (boothId) {
+      document.title = `Map: Booth ${boothId} - PAX Pal`;
+    } else {
+      document.title = "Booth Map - PAX Pal";
+    }
+  }, [boothId]);
+
+  useEffect(() => {
     fetch("/booths.json")
       .then((res) => {
         if (!res.ok) {

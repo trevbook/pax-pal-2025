@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Textarea,
@@ -16,6 +16,10 @@ import { searchGames } from "../api"; // Assuming api.js is in the parent direct
 import SearchResultCard from "../components/SearchResultCard";
 
 function SearchPage() {
+  useEffect(() => {
+    document.title = "Search - PAX Pal";
+  }, []);
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);

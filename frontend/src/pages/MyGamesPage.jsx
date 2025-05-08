@@ -28,6 +28,10 @@ import { fetchTotalGamesCount, fetchRecommendations, fetchGamesByIds } from "../
 import SearchResultCard from "../components/SearchResultCard";
 
 function MyGamesPage() {
+  useEffect(() => {
+    document.title = "My Games - PAX Pal";
+  }, []);
+
   const [displayedGames, setDisplayedGames] = useState([]);
   const navigate = useNavigate();
   const [clearAllModalOpened, setClearAllModalOpened] = useState(false);

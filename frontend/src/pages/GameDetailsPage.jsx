@@ -37,6 +37,14 @@ function GameDetailsPage() {
   const [similarGamesError, setSimilarGamesError] = useState(null);
 
   useEffect(() => {
+    if (game && game.name) {
+      document.title = `${game.name} - PAX Pal`;
+    } else {
+      document.title = "Game Details - PAX Pal";
+    }
+  }, [game]);
+
+  useEffect(() => {
     if (!id) {
       setGame(null);
       setLoading(false);
