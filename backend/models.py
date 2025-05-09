@@ -110,6 +110,12 @@ class GameTableRow(BaseModel):
     genres_and_tags: List[str] = Field(
         default_factory=list, description="List of genres and tags describing the game"
     )
+    exhibitor: Optional[str] = Field(
+        None, description="Name of the exhibitor showcasing the game"
+    )
+    booth_number: Optional[float] = Field(
+        None, description="Booth number at an exhibition or event"
+    )
 
 
 class SearchResult(BaseModel):

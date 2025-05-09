@@ -107,6 +107,19 @@ function AllGamesPage() {
         cell: (info) => info.getValue() || "-",
         size: 350,
       }),
+      columnHelper.accessor("exhibitor", {
+        header: "Exhibitor",
+        cell: (info) => info.getValue() || "-",
+        size: 200,
+      }),
+      columnHelper.accessor("booth_number", {
+        header: "Booth #",
+        cell: (info) => {
+          const val = info.getValue();
+          return val !== null && val !== undefined ? String(val) : "-";
+        },
+        size: 100,
+      }),
       columnHelper.accessor("platforms", {
         header: "Platforms",
         cell: (info) => info.getValue()?.join(", ") || "-",
@@ -118,7 +131,7 @@ function AllGamesPage() {
         header: "Genres/Tags",
         cell: (info) => info.getValue()?.join(", ") || "-",
         enableColumnFilter: true,
-        filterFn: "arrIncludesSome",
+        filterFn: "arrIncludesAll",
         size: 250,
       }),
     ],
@@ -143,6 +156,12 @@ function AllGamesPage() {
     },
     // Custom filter functions if needed, or rely on global filter for text and manual for selects
     filterFns: {
+      arrIncludesAll: (row, columnId, filterValue) => {
+        if (!filterValue || filterValue.length === 0) return true;
+        const rowValue = row.getValue(columnId);
+        if (!Array.isArray(rowValue)) return false;
+        return filterValue.every((val) => rowValue.includes(val));
+      },
       arrIncludesSome: (row, columnId, filterValue) => {
         if (!filterValue || filterValue.length === 0) return true;
         const rowValue = row.getValue(columnId);

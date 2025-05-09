@@ -182,7 +182,7 @@ def search_games(
 
 @app.get(
     "/api/games/count",
-    response_model=dict, # Using dict for a simple {"total_games": count} response
+    response_model=dict,  # Using dict for a simple {"total_games": count} response
     tags=["Games"],
     summary="Get the total number of games",
     description="Retrieves the total count of games in the database.",
@@ -197,13 +197,15 @@ def get_total_games_count(db: sqlite3.Connection = Depends(get_db)) -> dict:
     """
     cursor = db.cursor()
     try:
-        cursor.execute("SELECT COUNT(*) AS total_count FROM games") # Alias COUNT(*) as total_count
+        cursor.execute(
+            "SELECT COUNT(*) AS total_count FROM games"
+        )  # Alias COUNT(*) as total_count
         row = cursor.fetchone()
         if row:
-            count = row['total_count'] # Access by the alias
+            count = row["total_count"]  # Access by the alias
         else:
             # This case should ideally not happen with COUNT(*), but good to be safe
-            count = 0 
+            count = 0
         return {"total_games": count}
     except sqlite3.Error as e:
         print(f"Database error while counting games: {e}")
@@ -212,8 +214,11 @@ def get_total_games_count(db: sqlite3.Connection = Depends(get_db)) -> dict:
             detail="Database error while counting games.",
         )
     except Exception as e:
-        import traceback # Import traceback for detailed stack trace
-        print(f"Unexpected error while counting games. Type: {type(e)}, Repr: {repr(e)}, Str: {str(e)}")
+        import traceback  # Import traceback for detailed stack trace
+
+        print(
+            f"Unexpected error while counting games. Type: {type(e)}, Repr: {repr(e)}, Str: {str(e)}"
+        )
         print("Traceback:")
         print(traceback.format_exc())
         raise HTTPException(
@@ -239,13 +244,13 @@ def get_all_games_for_table(
     Retrieves specific fields for all games to be displayed in a table.
 
     Returns a list of games with their ID, name, snappy summary, platforms,
-    and genres/tags.
+    and genres/tags, sorted alphabetically by name.
     """
     cursor = db.cursor()
     try:
         cursor.execute(
             """
-            SELECT id, name, snappy_summary, platforms, genres_and_tags
+            SELECT id, name, snappy_summary, platforms, genres_and_tags, links, exhibitor, booth_number
             FROM games
             """
         )
@@ -265,6 +270,8 @@ def get_all_games_for_table(
                     "genres_and_tags": (
                         genres_and_tags if isinstance(genres_and_tags, list) else []
                     ),
+                    "exhibitor": row.get("exhibitor"),
+                    "booth_number": row.get("booth_number"),
                 }
                 games_for_table.append(GameTableRow(**game_data))
             except json.JSONDecodeError as e:
@@ -278,6 +285,9 @@ def get_all_games_for_table(
                     f"Error processing game ID {row.get('id', 'N/A')} for table: {e} - Data: {row}"
                 )
                 continue
+
+        # Sort alphabetically by game name (case-insensitive)
+        games_for_table.sort(key=lambda g: (g.name or "").lower())
 
         return games_for_table
 
@@ -406,7 +416,7 @@ async def get_recommendations_from_played(
         rows = cursor.fetchall()  # List of dicts due to row_factory
 
         for row in rows:
-            game_id = row.get("id") # For logging/debugging if needed
+            game_id = row.get("id")  # For logging/debugging if needed
             similar_games_json = row.get("similar_games")
             if similar_games_json:
                 try:
@@ -415,7 +425,9 @@ async def get_recommendations_from_played(
                         isinstance(gid, str) for gid in similar_ids_for_this_game
                     ):
                         all_similar_games_counter.update(similar_ids_for_this_game)
-                    elif similar_ids_for_this_game: # If not empty and not list of strings
+                    elif (
+                        similar_ids_for_this_game
+                    ):  # If not empty and not list of strings
                         print(
                             f"Warning: similar_games for game '{game_id}' was not a list of strings: {similar_games_json}"
                         )
@@ -427,13 +439,13 @@ async def get_recommendations_from_played(
 
         # Get game IDs sorted by frequency, most common first
         sorted_similar_games_with_counts = all_similar_games_counter.most_common()
-        
+
         recommended_ids_ordered = []
         for game_id, _ in sorted_similar_games_with_counts:
             if exclude_played_games and game_id in input_game_ids_set:
                 continue
             recommended_ids_ordered.append(game_id)
-            
+
         return GameIdList(ids=recommended_ids_ordered)
 
     except sqlite3.Error as e:
@@ -443,7 +455,8 @@ async def get_recommendations_from_played(
             detail="Database error retrieving recommendations.",
         )
     except Exception as e:
-        import traceback # For more detailed error logging
+        import traceback  # For more detailed error logging
+
         print(f"Unexpected error while fetching recommendations: {e}")
         print(traceback.format_exc())
         raise HTTPException(
