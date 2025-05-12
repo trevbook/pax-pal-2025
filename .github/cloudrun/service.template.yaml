@@ -12,7 +12,7 @@ spec:
     metadata:
       annotations:
         # Consider adding revision-specific annotations if needed
-        autoscaling.knative.dev/minScale: '1' # Cloud Run default is 0 for gen2
+        autoscaling.knative.dev/minScale: '0' # Cloud Run default is 0 for gen2
         # e.g., autoscaling.knative.dev/minScale: '0' (Cloud Run default is 0 for gen2)
     spec:
       containerConcurrency: 80 # Default, adjust if performance testing suggests otherwise
